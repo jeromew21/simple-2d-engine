@@ -11,14 +11,19 @@ var setup = {
         $("#canvas-1").attr("height", h).attr("width", w);
     },
     border: function() {
-        $("#canvas-1").css("border", "2px black solid")
+        $("#canvas-1").css("border", "2px darkgrey solid")
     },
     night: function() {
-        $("body").css("background-color", "darkgrey")
+        $("body").css("background-color", "#303030")
         $("#canvas-1").css("background-color", "white")
     },
     setCursor: function(c) {
         $("body").css("cursor", c)
+    },
+    title: function(t) {
+        $("#canvas-wrapper").prepend("<h1 id='mainTitle'>" + t + "</h1>").css("padding-left", "40px");
+        $("#mainTitle").css("color", "rgba(255, 255, 255, 0.8)").css("font-family", "Helvetica, Arial").css("margin-top", "45px").css("margin-bottom", "45px")
+        document.title = t;
     },
 }
 
