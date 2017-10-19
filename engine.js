@@ -4,40 +4,82 @@
 var canvas = document.getElementById("canvas-1")
 var ctx = canvas.getContext("2d");
 
+var setup = {
+    setDimensions: function(w, h) {
+        globals.width = w;
+        globals.height = h;
+        $("#canvas-1").attr("height", h).attr("width", w);
+    },
+    border: function() {
+        $("#canvas-1").css("border", "2px black solid")
+    },
+    night: function() {
+        $("body").css("background-color", "darkgrey")
+        $("#canvas-1").css("background-color", "white")
+    },
+    setCursor: function(c) {
+        $("body").css("cursor", c)
+    },
+}
+
 var globals = {
+    width: 600,
+    height: 400,
     mouseX: 0,
     mouseY: 0,
     mouseDown: false,
+    clickDelay: 500,
+    clickisValid: true,
 }
 
 var events = {
+    occur: function(event) {
+        this[event]();
+        for (k in sprites) {
+            sprite = sprites[k]
+            if (sprite.events[event]) {
+                sprite.events[event](sprite);
+            }
+        }
+    },
     mouseMove: function() {
     },
-    mouseDown: function(x, y) {
+    mouseDown: function() {
     },
-    mouseUp: function(x, y) {
+    mouseUp: function() {
+    },
+    click: function () {
     }
 }
 
 //Shorthand names
 var gv = globals;
 var ev = events;
+var log = console.log;
 
 document.onmousemove = function(e) {
-  var rect = canvas.getBoundingClientRect();
-  globals.mouseX = e.clientX - rect.left;
-  globals.mouseY = e.clientY - rect.top;
-  events.mouseMove()
+    var rect = canvas.getBoundingClientRect();
+    globals.mouseX = e.clientX - rect.left;
+    globals.mouseY = e.clientY - rect.top;
+    events.occur("mouseMove")
 }
 
 canvas.onmousedown = function(e) {
     globals.mouseDown = true;
-    events.mouseDown(globals.mouseX, globals.mouseY);
+    cancelClick = setTimeout(function() {
+        globals.clickisValid = false;
+    }, globals.clickDelay);
+    events.occur("mouseDown")
 }
 
 canvas.onmouseup = function(e) {
     globals.mouseDown = false;
-    events.mouseUp(globals.mouseX, globals.mouseY);
+    events.occur("mouseUp")
+    clearTimeout(cancelClick)
+    if (globals.clickisValid) {
+        events.occur("click")
+    }
+    globals.clickisValid = true;
 }
 
 var draw = {
@@ -49,9 +91,14 @@ var draw = {
 var sprites = {}
 
 function Sprite(name) {
-    this.name = name
+    this.name = name; //unique
     this.draw = function() {}
-    this.boundingBox = new BoundingBox()
+    this.boundingBox = new BoundingBox();
+    this.events = {};
+    this.bind = function(event, func) {
+        this.events[event] = func;
+    }
+    sprites[this.name] = this
 }
 
 function BoundingBox() {}

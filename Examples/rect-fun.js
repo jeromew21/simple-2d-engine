@@ -1,14 +1,18 @@
-var startX
-var startY
+setup.border();
+setup.night();
 
 draw.main = function() {
-    if (gv.mouseDown) {
-        ctx.rect(startX, startY, gv.mouseX - startX, gv.mouseY - startY);
-        ctx.stroke()
-    }
+    ctx.fillText("Mouse Example", 10, 10, 100)
 }
 
-ev.mouseDown = function(x, y) {
-    startX = x
-    startY = y
+sprite1 = new Sprite("MouseSelector")
+sprite1.bind("mouseDown", function(self) {
+    self.startX = gv.mouseX;
+    self.startY = gv.mouseY;
+})
+sprite1.draw = function() {
+    if (gv.mouseDown) {
+        ctx.rect(this.startX, this.startY, gv.mouseX - this.startX, gv.mouseY - this.startY)
+        ctx.stroke()
+    }   
 }
