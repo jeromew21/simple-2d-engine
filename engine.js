@@ -62,6 +62,11 @@ var gv = globals;
 var ev = events;
 var log = console.log;
 
+//Helpers
+function choice(arr) {
+    return arr[Math.floor(arr.length * Math.random())];
+}
+
 document.onmousemove = function(e) {
     var rect = canvas.getBoundingClientRect();
     globals.mouseX = e.clientX - rect.left;
@@ -89,24 +94,121 @@ canvas.onmouseup = function(e) {
 
 var draw = {
     main: function() {
-        ctx.fillText("Hello World", 100, 100, 100);
     }
 }
 
 var sprites = {}
 
 function Sprite(name) {
-    this.name = name; //unique
+    this.name = name; //unique; think about making ordering of layers
     this.draw = function() {}
-    this.boundingBox = new BoundingBox();
+    this.box = new BoundingBox();
     this.events = {};
     this.bind = function(event, func) {
         this.events[event] = func;
     }
-    sprites[this.name] = this
+    sprites[this.name] = this;
 }
 
-function BoundingBox() {}
+function BoundingBox() {
+    //Begin init
+    this.set = function(x, y, w, h, dir) {
+        this.dir = dir
+        this.center = [x, y]
+        hw = w/2
+        hh = h/2
+        this.p1 = this.restore(this.rotate(this.translate([x - hw, y - hh], this.center), this.dir), this.center)
+        this.p2 = this.restore(this.rotate(this.translate([x + hw, y - hh], this.center), this.dir), this.center)
+        this.p3 = this.restore(this.rotate(this.translate([x + hw, y + hh], this.center), this.dir), this.center)
+        this.p4 = this.restore(this.rotate(this.translate([x - hw, y + hh], this.center), this.dir), this.center)
+        this.w = w;
+        this.h = h;
+        this.x = x;
+        this.y = y;
+    }
+    this.translate = function(coord, center) {
+        //given a coord pair and a center, both w respect to global, give the new coords with respect to the center
+        return [coord[0] - center[0], center[1] - coord[1]]
+    }
+    this.restore = function(coord, center) {
+        //given a coord with respect to center and a center w respect to global return a coord w respect to global
+        return [coord[0] + center[0], center[1] - coord[1]]
+    }
+    this.rotate = function(coord, theta) {
+        //given a coord, rotate it theta radians with respect to 0, 0
+        //rotation matrix:
+        // |cos -sin |
+        // |sin  cos | 
+        // [xcos - ysin, xsin + ycos] with respect to center...
+        x = coord[0];
+        y = coord[1];
+
+        return [x * Math.cos(theta) - y * Math.sin(theta), x * Math.sin(theta) + y * Math.cos(theta)]
+    }
+    this.setPosition = function(x, y) {
+        this.set(x, y, this.w, this.h, this.dir)
+    }
+    this.setSize = function(w, h) {
+        this.set(this.x, this.y, w, h, this.dir)
+    }
+    this.setDir = function(dir) {
+        this.set(this.x, this.y, this.w, this.h, dir)
+    }
+    this.drawAttrs = {
+        fill: false,
+        border: true,
+        fillColor: "white",
+        borderColor: "black",
+        thickness: 1,
+        fillOpacity: 1,
+    }
+    this.drawStates = {}
+    this.saveDrawState = function(name) {
+        this.drawStates[name] = $.extend({}, this.drawAttrs)
+    }
+    this.restoreDrawState = function(name) {
+        this.drawAttrs = this.drawStates[name]
+    }
+    this.draw = function() {
+        ctx.fillStyle = this.drawAttrs.fillColor
+        ctx.strokeStyle = this.drawAttrs.borderColor
+        ctx.lineWidth = this.drawAttrs.thickness
+        ctx.beginPath();
+        ctx.moveTo(...this.p1)
+        ctx.lineTo(...this.p2)
+        ctx.lineTo(...this.p3)
+        ctx.lineTo(...this.p4)
+        ctx.lineTo(...this.p1)
+        ctx.closePath()
+        if (this.drawAttrs.fill) {
+            ctx.globalAlpha = this.drawAttrs.fillOpacity
+            ctx.fill()
+            ctx.globalAlpha = 1
+        } 
+        if (this.drawAttrs.border) {
+            ctx.stroke()
+        }
+    }
+    //End init
+
+    this.pointInside = function(point) {
+        px = point[0];
+        py = point[1];
+        //lines from p1 to p2, p3 to p4
+        //lines form p2 to p3, p1 to p4
+        //must be inside bounds of each of those pairs of lines
+    }
+    this.touching = function(otherBox) {
+        pts = [this.p1, this.p2, this.p3, this.p4]
+        opts = [otherBox.p1, otherBox.p2, otherBox.p3, otherBox.p4]
+        for (var i = 0; i < 4; i++) {
+            if (otherBox.pointInside(pts[i]) || this.pointInside(opts[i])) {
+                return true
+            }
+        }
+        return false
+    }
+}
 
 //Kick off
 var update = function() {
@@ -121,3 +223,5 @@ var update = function() {
     }
 } 
 update();
+
+//think about cleaning sprite object?
