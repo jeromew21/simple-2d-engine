@@ -1,4 +1,3 @@
-//setup.border();
 setup.night();
 setup.title("Mouse And Rotate Example");
 
