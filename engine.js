@@ -25,12 +25,12 @@ var setup = {
         document.title = t;
     },
     resizeToScreen: function() {
-        globals.width = window.innerWidth;
-        globals.height = window.innerHeight;
+        globals.width = window.innerWidth - 100;
+        globals.height = window.innerHeight - 200;
         $("#canvas-1").attr("height", globals.height).attr("width", globals.width);
-        document.
     },
     dynamicResize: function() {
+        this.resizeToScreen();
         window.onresize = this.resizeToScreen;
     }
 }
@@ -49,7 +49,7 @@ var globals = {
 var events = {
     occur: function(event) {
         this[event]();
-        for (var k = 0; k < sprite.length; k++) {
+        for (var k = 0; k < sprites.length; k++) {
             sprite = sprites[k]
             if (sprite.events[event]) {
                 sprite.events[event](sprite);
@@ -173,7 +173,7 @@ var draw = {
     overdraw: function() {},
 }
 
-var sprites = {}
+var sprites = []
 
 function Sprite(name) {
     this.name = name; //unique; think about making ordering of layers
@@ -478,7 +478,7 @@ var update = function() {
     for (k in draw) {
         draw[k]()
     }
-    for (var k = 0; k < sprite.length; k++) {
+    for (var k = 0; k < sprites.length; k++) {
         sprites[k].draw()
     }
     draw.overdraw()
