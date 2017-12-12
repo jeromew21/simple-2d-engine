@@ -1,6 +1,4 @@
-setup.night();
-setup.title("Mouse And Rotate Example");
-setup.dynamicResize();
+setup.init("Mouse And Rotate Example");
 
 //Test rotate and scale and adding anonymous sprites
 for (var i=0; i < 101; i++) {

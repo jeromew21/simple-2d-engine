@@ -1,7 +1,17 @@
 //A simple 2d graphics engine
 //Uses jQuery for styling page and some helper functions    
+
 var canvas = document.getElementById("canvas-1")
 var ctx = canvas.getContext("2d");
+
+//Set global styles
+$("body").css({
+    "-moz-user-select": "none",
+    "-webkit-user-select": "none",
+    "-ms-user-select": "none", 
+    "user-select": "none",
+    "-o-user-select": "none"
+});
 
 var setup = {
     setDimensions: function(w, h) {
@@ -16,9 +26,6 @@ var setup = {
         $("body").css("background-color", "#303030")
         $("#canvas-1").css("background-color", "white")
     },
-    setCursor: function(c) {
-        $("body").css("cursor", c)
-    },
     title: function(t) {
         $("#canvas-wrapper").prepend("<h1 id='mainTitle'>" + t + "</h1>").css("padding-left", "40px");
         $("#mainTitle").css("color", "rgba(255, 255, 255, 0.8)").css("font-family", "Helvetica, Arial").css("margin-top", "45px").css("margin-bottom", "45px")
@@ -32,6 +39,11 @@ var setup = {
     dynamicResize: function() {
         this.resizeToScreen();
         window.onresize = this.resizeToScreen;
+    },
+    init: function(t) {
+        this.title(t);
+        this.night();
+        this.resizeToScreen();
     }
 }
 
@@ -44,6 +56,9 @@ var globals = {
     clickDelay: 500,
     clickisValid: true,
     keys: {},
+    setCursor: function(c) {
+        $("body").css("cursor", c)
+    },
 }
 
 var events = {
@@ -173,10 +188,10 @@ var draw = {
     overdraw: function() {},
 }
 
-var sprites = []
+var sprites = [];
 
 function Sprite(name) {
-    this.name = name; //unique; think about making ordering of layers
+    this.name = name; 
     this.box = new BoundingBox(); //Comes with a default box
     this.draw = function() {
         this.box.draw();
@@ -185,6 +200,7 @@ function Sprite(name) {
     this.bind = function(event, func) { //Global events; make own hadling for local events
         this.events[event] = func;
     }
+    this.box.set(-999, -999, 0, 0, 0);
     sprites.push(this);
 }
 
@@ -247,22 +263,14 @@ function BoundingBox() {
         borderColor: "black",
         thickness: 1,
         fillOpacity: 1,
-        font: "Lucida Console",
-        fontSize: 20,
+        font: "sans",
+        fontSize: 25,
         fontColor: "black",
+        text: true,
         textAlign: "center",
         textDir: 0,
-        textPosition: [0, 17],
     }
     this.text = ""
-    this.drawStates = {}
-    this.saveDrawState = function(name) {
-        this.drawStates[name] = $.extend({}, this.drawAttrs)
-        this.drawStates[name].textPosition = $.extend({}, this.drawAttrs.textPosition)
-    }
-    this.restoreDrawState = function(name) {
-        this.drawAttrs = this.drawStates[name]
-    }
     this.draw = function() {
         ctx.fillStyle = this.drawAttrs.fillColor
         ctx.strokeStyle = this.drawAttrs.borderColor
@@ -282,14 +290,19 @@ function BoundingBox() {
         if (this.drawAttrs.border) {
             ctx.stroke()
         }
+        //end shape drawing
+
         ctx.fillStyle = this.drawAttrs.fontColor
-        ctx.font = "" + this.drawAttrs.fontSize + "px " + this.drawAttrs.font
-        ctx.save()
-        ctx.translate(this.x, this.y)
-        ctx.rotate((-1 * this.dir) - this.drawAttrs.textDir)
-        ctx.textAlign = this.drawAttrs.textAlign
-        ctx.fillText(this.text, ...this.rotate(this.drawAttrs.textPosition, this.drawAttrs.textDir))
-        ctx.restore()
+
+        if (this.drawAttrs.text) {
+            ctx.font = "" + this.drawAttrs.fontSize + "px " + this.drawAttrs.font
+            ctx.save()
+            ctx.translate(this.x, this.y)
+            ctx.rotate((-1 * this.dir) - this.drawAttrs.textDir)
+            ctx.textAlign = this.drawAttrs.textAlign
+            ctx.fillText(this.text, ...this.rotate([0, (this.drawAttrs.fontSize/2)-2], this.drawAttrs.textDir))
+            ctx.restore()
+        }
     }
     this.drawEllipse = function() {
         ctx.fillStyle = this.drawAttrs.fillColor
@@ -439,8 +452,9 @@ function BoundingBox() {
 }
 
 var grid = {
-    rows: 12,
+    rows: 8,
     cols: 8,
+    tiles: [],
     draw: function() {
         width = gv.width/grid.rows
         height = gv.height/grid.cols
@@ -458,15 +472,33 @@ var grid = {
         }
     },
     tiles: [],
-    populate: function(i, k) {return null},
-    setup: function() {
-        this.tiles = []
+    get: function(r, c) {
+        return tiles[r][c]
+    },
+    foreach: function(f) {
+        for (var i = 0; i < this.rows; i++) {
+            for (var k = 0; k < this.cols; k++) {
+                f(this.tiles[i][k]);
+            }
+        }
+    },
+    init: function(r, c) {
+        this.rows = r;
+        this.cols = c;
+        width = gv.width / grid.rows;
+        height = gv.height / grid.cols;
+        this.tiles = [];
         for (var i = 0; i < this.rows; i++) {
             this.tiles.push([])
             for (var k = 0; k < this.cols; k++) {
-                this.tiles[i].push(this.populate(i, k))
+                s = new Sprite("gridCell" + i + k);
+                s.row = i;
+                s.col = k;
+                s.box.set((width * i) + (width/2), (height * k) + (height/2), width, height, 0)
+                this.tiles[i].push(s)
             }
         }
+        draw.overdraw = this.draw
     }
 }
 
