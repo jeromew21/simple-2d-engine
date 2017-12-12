@@ -24,6 +24,15 @@ var setup = {
         $("#mainTitle").css("color", "rgba(255, 255, 255, 0.8)").css("font-family", "Helvetica, Arial").css("margin-top", "45px").css("margin-bottom", "45px")
         document.title = t;
     },
+    resizeToScreen: function() {
+        globals.width = window.innerWidth;
+        globals.height = window.innerHeight;
+        $("#canvas-1").attr("height", globals.height).attr("width", globals.width);
+        document.
+    },
+    dynamicResize: function() {
+        window.onresize = this.resizeToScreen;
+    }
 }
 
 var globals = {
@@ -40,7 +49,7 @@ var globals = {
 var events = {
     occur: function(event) {
         this[event]();
-        for (k in sprites) {
+        for (var k = 0; k < sprite.length; k++) {
             sprite = sprites[k]
             if (sprite.events[event]) {
                 sprite.events[event](sprite);
@@ -67,6 +76,7 @@ function choice(arr) {
     return arr[Math.floor(arr.length * Math.random())];
 }
 
+//Global event handlers
 $("#canvas-1").bind('contextmenu', function(e){
     return false;
 }); 
@@ -167,13 +177,15 @@ var sprites = {}
 
 function Sprite(name) {
     this.name = name; //unique; think about making ordering of layers
-    this.draw = function() {}
-    this.box = new BoundingBox();
+    this.box = new BoundingBox(); //Comes with a default box
+    this.draw = function() {
+        this.box.draw();
+    }
     this.events = {};
     this.bind = function(event, func) { //Global events; make own hadling for local events
         this.events[event] = func;
     }
-    sprites[this.name] = this;
+    sprites.push(this);
 }
 
 function BoundingBox() {
@@ -466,8 +478,8 @@ var update = function() {
     for (k in draw) {
         draw[k]()
     }
-    for (j in sprites) {
-        sprites[j].draw()
+    for (var k = 0; k < sprite.length; k++) {
+        sprites[k].draw()
     }
     draw.overdraw()
 } 
