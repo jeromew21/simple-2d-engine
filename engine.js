@@ -494,12 +494,45 @@ var grid = {
                 s = new Sprite("gridCell" + i + k);
                 s.row = i;
                 s.col = k;
-                s.box.set((width * i) + (width/2), (height * k) + (height/2), width, height, 0)
+                s.box.set((width * k) + (width/2), (height * i) + (height/2), width, height, 0)
                 this.tiles[i].push(s)
             }
         }
         draw.overdraw = this.draw
-    }
+    },
+    rotate: function(amt) {
+        if (this.rows == this.cols) {
+            if (amt == 90) {
+                positions = []
+                for (var i = 0; i < this.rows; i++) {
+                    //create an array of positions, rotate it, then iterate thru original and give each a new position
+                    positions.push([])
+                    for (var k = 0; k < this.cols; k++) {
+                        positions[i].push([this.tiles[i][k].box.x, this.tiles[i][k].box.y]);
+                    }
+                } 
+
+                newPositions = []
+                for (var i = 0; i < this.rows; i++) {
+                    newPositions.push([])
+                    for (var k = this.rows-1; k >= 0; k -= 1) {
+                        newPositions[i].push(positions[k][i]);
+                    }
+                }
+
+                for (var i = 0; i < this.rows; i++) {
+                    for (var k = 0; k < this.cols; k++) {
+                        this.tiles[i][k].box.setPosition(newPositions[i][k][0], newPositions[i][k][1]);
+                    }
+                }
+            } else if (amt == 180) {
+                this.rotate(90);
+                this.rotate(90);
+            }
+        } else {
+            log("Cannot rotate a nonsquare grid")
+        }
+    },
 }
 
 //Kick off
