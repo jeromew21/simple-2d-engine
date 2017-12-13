@@ -473,7 +473,7 @@ var grid = {
     },
     tiles: [],
     get: function(r, c) {
-        return tiles[r][c]
+        return this.tiles[r][c]
     },
     foreach: function(f) {
         for (var i = 0; i < this.rows; i++) {
