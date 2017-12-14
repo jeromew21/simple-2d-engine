@@ -1,5 +1,8 @@
-setup.init("Chess")
-setup.setDimensions(600, 600)
+setup.init("Chess");
+setup.setDimensions(600, 600);
+setup.createOptions({
+	"flip board": false,
+});
 
 grid.init(8, 8);
 
@@ -37,7 +40,7 @@ pairIn = function(arr, p1, p2) {
 }
 
 inArr = function(arr, item) {
-    return arr.indexOf(item) > 0;
+    return arr.indexOf(item) > -1;
 }
 
 game = {
@@ -47,6 +50,8 @@ game = {
         this.blackCastled = false;
         this.lastMove = null;
         this.board = $.extend(true, {}, startingBoard);
+        this.updateGrid();
+        gv.message("White's turn");
     },
 	turn: white,
 	whiteCastled: false,
@@ -96,14 +101,25 @@ game = {
 	},
 	updateGrid: function() {
 		grid.foreach(function(sprite) {
-			sprite.box.text = game.board[sprite.row][sprite.col];
-		})
+			if (game.board[sprite.row][sprite.col] == EMPTY) {
+				sprite.box.drawAttrs.image = false;
+		    	sprite.box.text = EMPTY;
+		    } else {    
+			    sprite.box.drawAttrs.image = true;
+			    sprite.box.drawAttrs.imageSrc = "Examples/chess/pieces/" + game.board[sprite.row][sprite.col] + ".png";
+			}
+		});
 	},
 	move: function(l1, l2) {
 		if (this.turn == white) {
 			this.turn = black;
+			gv.message("Black's turn");
 		} else {
 			this.turn = white;
+			gv.message("White's turn");
+		}
+		if (gv["flip board"]) {
+			grid.rotate(180);
 		}
 		piece = this.board[l1[0]][l1[1]];
 		this.board[l1[0]][l1[1]] = EMPTY;
@@ -155,22 +171,28 @@ grid.foreach(function(sprite) {
     	sprite.gridColor = colorScheme.blackCell
     	sprite.box.drawAttrs.fillColor = colorScheme.blackCell;
     }
-    sprite.box.text = game.board[sprite.row][sprite.col];
+
+    
+
     sprite.bind("click", function(self) {
         if (self.box.pointInside([gv.mouseX, gv.mouseY])) {
             game.handleClick(self.row, self.col);
         }
     })
-    //Add box relative positioning 
+    
+    //Add box w/ relative positioning 
     sprite.box2 = new BoundingBox(); //Make child of box
-    sprite.box2.set(sprite.box.x-sprite.box.w/2+10, 
-                    sprite.box.y+sprite.box.h/2-10, 
-                    sprite.box.w, sprite.box.h, sprite.box.dir);
     sprite.box2.text = letters[sprite.col] + "" + (8-sprite.row);
     sprite.box2.drawAttrs.border = false;
     sprite.box2.drawAttrs.fontSize = 10;
-    sprite.draw = function () {
+
+    sprite.draw = function() {
         sprite.box.draw();
+        sprite.box2.set(sprite.box.x-sprite.box.w/2+10, 
+                    sprite.box.y+sprite.box.h/2-10, 
+                    sprite.box.w, sprite.box.h, sprite.box.dir);
         sprite.box2.draw();
     }
 })
+
+game.init();

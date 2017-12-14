@@ -17,18 +17,18 @@ var setup = {
     setDimensions: function(w, h) {
         globals.width = w;
         globals.height = h;
-        $("#canvas-1").attr("height", h).attr("width", w);
+        $("#canvas-1").attr("height", h).attr("width", w).css("float", "left");
     },
     border: function() {
         $("#canvas-1").css("border", "2px darkgrey solid")
     },
     night: function() {
-        $("body").css("background-color", "#303030")
+        $("body").css("background-color", "#303030").css("color", "rgba(255, 255, 255, 0.8)");
         $("#canvas-1").css("background-color", "white")
     },
     title: function(t) {
         $("#canvas-wrapper").prepend("<h1 id='mainTitle'>" + t + "</h1>").css("padding-left", "40px");
-        $("#mainTitle").css("color", "rgba(255, 255, 255, 0.8)").css("font-family", "Helvetica, Arial").css("margin-top", "45px").css("margin-bottom", "45px")
+        $("#mainTitle").css("font-family", "Helvetica, Arial").css("margin-top", "45px").css("margin-bottom", "45px")
         document.title = t;
     },
     resizeToScreen: function() {
@@ -44,6 +44,13 @@ var setup = {
         this.title(t);
         this.night();
         this.resizeToScreen();
+        $("#canvas-wrapper").append("<div style='float:left; margin:15px' id='rightCol'><div id='message'></div></div>");
+    },
+    createOptions: function(o) {
+        //Fill this in at some point
+    },
+    createButton: function(title, e) {
+
     }
 }
 
@@ -59,6 +66,9 @@ var globals = {
     setCursor: function(c) {
         $("body").css("cursor", c)
     },
+    message: function(m) {
+        $("#message").html(m);
+    }
 }
 
 var events = {
@@ -269,8 +279,11 @@ function BoundingBox() {
         text: true,
         textAlign: "center",
         textDir: 0,
+        image: false, //make false
+        imageSrc: null,
     }
-    this.text = ""
+    this.text = "";
+    this.image = null;
     this.draw = function() {
         ctx.fillStyle = this.drawAttrs.fillColor
         ctx.strokeStyle = this.drawAttrs.borderColor
@@ -292,9 +305,8 @@ function BoundingBox() {
         }
         //end shape drawing
 
-        ctx.fillStyle = this.drawAttrs.fontColor
-
         if (this.drawAttrs.text) {
+            ctx.fillStyle = this.drawAttrs.fontColor
             ctx.font = "" + this.drawAttrs.fontSize + "px " + this.drawAttrs.font
             ctx.save()
             ctx.translate(this.x, this.y)
@@ -303,6 +315,19 @@ function BoundingBox() {
             ctx.fillText(this.text, ...this.rotate([0, (this.drawAttrs.fontSize/2)-2], this.drawAttrs.textDir))
             ctx.restore()
         }
+
+        if (this.drawAttrs.image) {
+            if (this.image == null) {
+                //Load image src
+                //this.drawAttrs.image = false;
+                this.image = new Image();
+                this.image.src = this.drawAttrs.imageSrc;
+            } else {
+                // paint image
+                //Check for ERROR!!!
+                ctx.drawImage(this.image, this.x-this.w/2, this.y-this.h/2);
+            }
+        } 
     }
     this.drawEllipse = function() {
         ctx.fillStyle = this.drawAttrs.fillColor
