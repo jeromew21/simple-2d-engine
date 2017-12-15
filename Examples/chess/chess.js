@@ -180,9 +180,132 @@ game = {
                     }
                 }
             } else if (piece == "wN" || piece == "bN") {
-                k = [1, 2];
-            }
+                for (var i = -2; i < 3; i++) {
+                    for (var k = -2; k < 3; k++) {
+                        if ((i != 0 && k != 0) && Math.abs(i) != Math.abs(k)) {
+                            if ((r+i <= 7 && r+i >= 0) && (c+k <= 7 && c+k >= 0)) {
+                                if (board[r+i][c+k] == EMPTY || inArr(enemies, board[r+i][c+k])) {
+                                    result.push([r+i, c+k]);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (piece == "wR" || piece == "bR") {
+                walks = [
+                    [1, 0],
+                    [-1, 0],
+                    [0, 1],
+                    [0, -1]
+                ]
+                for (var i = 0; i < 4; i++) {
+                    dx = walks[i][0];
+                    dy = walks[i][1];
+                    while (true) {
+                        if ((r+dy > 7 || r+dy < 0) || (c+dx > 7 || c+dx < 0)) {
+                            break;
+                        }
+                        if (inArr(friendlies, board[r+dy][c+dx])) {
+                            break;
+                        }
+                        if (inArr(enemies, board[r+dy][c+dx])) {
+                            result.push([r+dy, c+dx]);
+                            break;
+                        }
+                        if (board[r+dy][c+dx] == EMPTY) {
+                            result.push([r+dy, c+dx])
+                        }
+                        dx += walks[i][0];
+                        dy += walks[i][1];
+                    }
+                }
+            } else if (piece == "wB" || piece == "bB") {
+                walks = [
+                    [1, 1],
+                    [-1, 1],
+                    [1, -1],
+                    [-1, -1]
+                ]
+                for (var i = 0; i < 4; i++) {
+                    dx = walks[i][0];
+                    dy = walks[i][1];
+                    while (true) {
+                        if ((r+dy > 7 || r+dy < 0) || (c+dx > 7 || c+dx < 0)) {
+                            break;
+                        }
+                        if (inArr(friendlies, board[r+dy][c+dx])) {
+                            break;
+                        }
+                        if (inArr(enemies, board[r+dy][c+dx])) {
+                            result.push([r+dy, c+dx]);
+                            break;
+                        }
+                        if (board[r+dy][c+dx] == EMPTY) {
+                            result.push([r+dy, c+dx])
+                        }
+                        dx += walks[i][0];
+                        dy += walks[i][1];
+                    }
+                }
+            } else if (piece == "wQ" || piece == "bQ") {
+                walks = [
+                    [1, 1],
+                    [-1, 1],
+                    [1, -1],
+                    [-1, -1],
+                    [1, 0],
+                    [-1, 0],
+                    [0, 1],
+                    [0, -1]
+                ]
+                for (var i = 0; i < 8; i++) {
+                    dx = walks[i][0];
+                    dy = walks[i][1];
+                    while (true) {
+                        if ((r+dy > 7 || r+dy < 0) || (c+dx > 7 || c+dx < 0)) {
+                            break;
+                        }
+                        if (inArr(friendlies, board[r+dy][c+dx])) {
+                            break;
+                        }
+                        if (inArr(enemies, board[r+dy][c+dx])) {
+                            result.push([r+dy, c+dx]);
+                            break;
+                        }
+                        if (board[r+dy][c+dx] == EMPTY) {
+                            result.push([r+dy, c+dx])
+                        }
+                        dx += walks[i][0];
+                        dy += walks[i][1];
+                    }
+                }
+            } else if (piece == "wK" || piece == "bK") {
+                walks = [
+                    [1, 1],
+                    [-1, 1],
+                    [1, -1],
+                    [-1, -1],
+                    [1, 0],
+                    [-1, 0],
+                    [0, 1],
+                    [0, -1]
+                ]
+                for (var i = 0; i < 8; i++) {
+                    dx = walks[i][0];
+                    dy = walks[i][1];
+                    if (!(r+dy > 7 || r+dy < 0) || (c+dx > 7 || c+dx < 0)) {
+                        if (!inArr(friendlies, board[r+dy][c+dx])) {
+                            if (inArr(enemies, board[r+dy][c+dx]) || board[r+dy][c+dx] == EMPTY) {
+                                result.push([r+dy, c+dx]);
+                            }
+                        }
+                    }
+                }
+            } 
             return result;
+        }
+        if (check) {
+            //Keep results that don't create a check
         }
         return [];
     }
