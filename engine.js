@@ -329,6 +329,10 @@ function BoundingBox() {
             }
         } 
     }
+    this.refreshImage = function(s) {
+        this.image = new Image();
+        this.image.src = this.drawAttrs.imageSrc;
+    }
     this.drawEllipse = function() {
         ctx.fillStyle = this.drawAttrs.fillColor
         ctx.strokeStyle = this.drawAttrs.borderColor
