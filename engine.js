@@ -94,7 +94,7 @@ var events = {
 //Shorthand names
 var gv = globals;
 var ev = events;
-var log = console.log;
+var print = console.log;
 
 //Helpers
 function choice(arr) {
