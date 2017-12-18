@@ -324,8 +324,9 @@ function BoundingBox() {
                 this.image.src = this.drawAttrs.imageSrc;
             } else {
                 // paint image
-                //Check for ERROR!!!
-                ctx.drawImage(this.image, this.x-this.w/2, this.y-this.h/2);
+                if (this.image.complete && this.image.naturalHeight != 0) {
+                    ctx.drawImage(this.image, this.x-this.w/2, this.y-this.h/2);
+                }
             }
         } 
     }
@@ -559,7 +560,7 @@ var grid = {
                 this.rotate(90);
             }
         } else {
-            log("Cannot rotate a nonsquare grid")
+            print("Cannot rotate a nonsquare grid")
         }
     },
 }

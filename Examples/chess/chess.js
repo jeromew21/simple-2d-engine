@@ -1,8 +1,5 @@
 setup.init("Chess");
 setup.setDimensions(600, 600);
-setup.createOptions({
-    "flip board": false,
-});
 
 grid.init(8, 8);
 
@@ -13,8 +10,8 @@ var EMPTY = "";
 var colorScheme = {
     whiteCell: "white",
     blackCell: "gray",
-    active: "pink",
-    move: "yellow"
+    active: "#98FB98",
+    move: "#FFFF54"
 }
 
 var startingBoard = [
@@ -47,11 +44,18 @@ function copyObj(arr) {
     return $.extend(true, {}, arr);
 }
 
+//test
+//gv["flip board"] = true;
+
 function Game() {
     this.init = function() {
         this.turn = white;
         this.whiteCastled = false;
         this.blackCastled = false;
+        this.whiteCanCastleKs = true;
+        this.blackCanCastleKs = true;
+        this.whiteCanCastleQs = true;
+        this.blackCanCastleQs = true;
         this.lastMove = null;
         this.board = copyObj(startingBoard);
         this.updateGrid();
@@ -101,10 +105,11 @@ function Game() {
             }
         } else if (pairIn(this.potentialMoves, r, c)) {
             //case 3 ^
-            this.move(this.active, [r, c]); //switches turn
+            this.move(this.active, [r, c]);
             //interfacing
             this.active = null; 
             this.potentialMoves = [];
+            //switch turn
             if (this.turn == white) {
                 this.turn = black;
                 gv.message("Black's turn");
@@ -112,10 +117,12 @@ function Game() {
                 this.turn = white;
                 gv.message("White's turn");
             }
+            this.updateGrid();
+            //check for win/stale
             if (gv["flip board"]) {
                 grid.rotate(180);
+                this.updateGrid();
             }
-            this.updateGrid();
         } 
     },
     this.updateGrid = function() {
@@ -133,10 +140,71 @@ function Game() {
     }
     this.move = function(l1, l2) { 
         var piece = this.board[l1[0]][l1[1]];
-        this.board[l1[0]][l1[1]] = EMPTY;
-        this.board[l2[0]][l2[1]] = piece; //Do material cals and stuff here/ pawn promotion/ castling
+        if (piece == "wP" && l2[0] == 0) {
+            piece = "wQ";
+        }
+        if (piece == "bP" && l2[0] == 7) {
+            piece = "bQ";
+        }
         
-        //Check for mate/stale
+        //en passant
+        if (piece == "wP") {
+            if (l1[1] != l2[1]) {
+                if (this.board[l2[0]][l2[1]] == EMPTY) {
+                    this.board[l2[0]+1][l2[1]] = EMPTY;
+                }
+            }
+        }
+        if (piece == "bP") {
+            if (l1[1] != l2[1]) {
+                if (this.board[l2[0]][l2[1]] == EMPTY) {
+                    this.board[l2[0]-1][l2[1]] = EMPTY;
+                }
+            }
+        }
+
+        this.board[l1[0]][l1[1]] = EMPTY; //remove from current location
+        this.board[l2[0]][l2[1]] = piece; //place at new location
+
+        var rook;
+        if (piece == "wK") {
+            this.whiteCanCastleKs = false;
+            this.whiteCanCastleQs = false;
+            this.whiteCastled = true;
+            rook = "wR";
+        }
+        if (piece == "bK") {
+            this.blackCanCastleKs = false;
+            this.blackCanCastleQs = false;
+            this.blackCastled = true;
+            rook = "bR";
+        }
+        if ((piece == "wK") || (piece == "bK")) {
+            if (l1[1] == 4 && l2[1] == 6) {
+                this.board[l1[0]][7] = EMPTY;
+                this.board[l1[0]][5] = rook;
+            } else if (l1[1] == 4 && l2[1] == 2) {
+                this.board[l1[0]][0] = EMPTY;
+                this.board[l1[0]][3] = rook;
+            }
+        }
+        if (piece == "wR") {
+            if (l1[0] == 7 && l1[1] == 7) {
+                this.whiteCanCastleKs = false;
+            }
+            if (l1[0] == 7 && l1[1] == 0) {
+                this.whiteCanCastleQs = false;
+            }
+        }
+        if (piece == "bR") {
+            if (l1[0] == 0 && l1[1] == 7) {
+                this.blackCanCastleKs = false;
+            }
+            if (l1[0] == 0 && l1[1] == 0) {
+                this.blackCanCastleQs = false;
+            }
+        }
+        this.lastMove = [l1, l2];
     }
 }
 
@@ -198,6 +266,13 @@ function legalMoves(g, r, c, check) {
                 if (c+1 <= 7) {
                     if (inArr(enemies, board[r-1][c+1])) {
                         result.push([r-1, c+1]);
+                    }
+                }
+                if (r == 3) {
+                    if (Math.abs(g.lastMove[0][1]-c) == 1 && g.lastMove[0][1] == g.lastMove[1][1]) {
+                        if ((g.lastMove[1][0] == 3 && g.lastMove[0][0] == 1) && board[g.lastMove[1][0]][g.lastMove[1][1]] == "bP") {
+                            result.push([r-1, g.lastMove[0][1]]);
+                        }
                     }
                 }
             }
@@ -342,18 +417,22 @@ function legalMoves(g, r, c, check) {
                     }
                 }
             }
-            //add castles -- Make sure clear 3 spaces queenside (c-n), 2 spaces kingside (c+n)
-            //king cannot pass thru check
+            //king cannot pass thru check or CASTLE OUT OF CHECK
             //Can only do once, and if either piece has moved, then cannot
-            if ((piece == "wK" && !g.whiteCastled) || (piece == "bK" && !g.blackCastled)) {
-                if (piece == "wK" && false){
-
-                } else if (piece == "wK" && false){
-
-                } else if (piece == "bK" && false) {
-
-                } else if (piece == "bK" && false) {
-                    
+            if (((piece == "wK" && !g.whiteCastled) && (c == 4 && r == 7)) || ((piece == "bK" && !g.blackCastled) && (c == 4 && r == 0))) {
+                if (((piece == "wK" && g.whiteCanCastleKs) && board[7][7] == "wR") || ((piece == "bK" && g.blackCanCastleKs))){// && board[0][7] == "bR")){
+                    if (board[r][c+1] == EMPTY && board[r][c+2] == EMPTY) {
+                        if (!isCheck(g, friendlies, [r, c], [r, c+1])) {
+                            result.push([r, c+2]);
+                        }
+                    } 
+                } 
+                if (((piece == "wK" && g.whiteCanCastleQs) && board[7][0] == "wR") || ((piece == "bK" && g.blackCanCastleQs) && board[0][0] == "bR")){
+                    if ((board[r][c-1] == EMPTY && board[r][c-2] == EMPTY) && board[r][c-3] == EMPTY) {
+                        if (!isCheck(g, friendlies, [r, c], [r, c-1]) && !isCheck(g, friendlies, [r, c], [r, c-2])) {
+                            result.push([r, c-2]);
+                        }
+                    } 
                 }
             }
         } 
