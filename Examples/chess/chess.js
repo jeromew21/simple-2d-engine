@@ -138,7 +138,7 @@ function Game() {
 
 function isCheck(g, side, l1, l2) {
     var king = "bK";
-    var attackers = side;
+    var attackers = white;
     if (side == white) {
         king = "wK";
         attackers = black;
@@ -147,13 +147,17 @@ function isCheck(g, side, l1, l2) {
     var board = gg.board;
     var moves;
     //apply move
+    gg.move(l1, l2);
     for (var i = 0; i < 8; i++) {
         for (var k = 0; k < 8; k++) {
             if (inArr(attackers, board[i][k])) {
-                moves = legalMoves(gg, i, k, false); //breaks
-                //for (var m = 0; m < moves.length; m++) {
-                    //log (board[moves[m][0]][moves[m][1]]);
-                //}
+                moves = legalMoves(gg, i, k, false); 
+                for (var m = 0; m < moves.length; m++) {
+                    print(board[moves[m][0]][moves[m][1]])
+                    if (board[moves[m][0]][moves[m][1]] == king) {
+                        return true;
+                    }
+                }
             }
         }
     }
