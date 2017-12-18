@@ -60,10 +60,14 @@ function Game() {
         this.board = copyObj(startingBoard);
         this.updateGrid();
         gv.message("White's turn");
+        this.gameOver = false;
+        this.gameOverStatus = "";
     }
     this.turn = white;
     this.whiteCastled = false;
     this.blackCastled = false;
+    this.gameOver = false;
+    this.gameOverStatus = "";
     this.whiteCanCastleKs = true;
     this.blackCanCastleKs = true;
     this.whiteCanCastleQs = true;
@@ -73,58 +77,97 @@ function Game() {
     this.active = null;
     this.potentialMoves = [];
     this.handleClick = function(r, c) {
-        grid.foreach(function(sprite) {
-            sprite.box.drawAttrs.fillColor = sprite.gridColor;
-        }); //Clear all added colors
+        if (!this.gameOver) {
+            grid.foreach(function(sprite) {
+                sprite.box.drawAttrs.fillColor = sprite.gridColor;
+            }); //Clear all added colors
 
-        //Possiblities: 
-        //1. Our turn and a friendly piece -- color possible moves as well -- set active Piece -- Remove all statuses -- Add statuses
-        //2. Our turn and a empty space / enemy piece  -- Defaults
-        //3. Our turn and clicking on a possible move
-        var cell = grid.get(r, c);
-        var piece = this.board[r][c];
-        var turn = this.turn;
-        if (inArr(turn, piece)) {
-            //Case 1 ^
-            if (this.active != null && (this.active[0] == r && this.active[1] == c)) {
-                //Clicked on already active spot
-                this.active = null;
+            //Possiblities: 
+            //1. Our turn and a friendly piece -- color possible moves as well -- set active Piece -- Remove all statuses -- Add statuses
+            //2. Our turn and a empty space / enemy piece  -- Defaults
+            //3. Our turn and clicking on a possible move
+            var cell = grid.get(r, c);
+            var piece = this.board[r][c];
+            var turn = this.turn;
+            if (inArr(turn, piece)) {
+                //Case 1 ^
+                if (this.active != null && (this.active[0] == r && this.active[1] == c)) {
+                    //Clicked on already active spot
+                    this.active = null;
+                    this.potentialMoves = [];
+                    grid.foreach(function(sprite) {
+                        sprite.box.drawAttrs.fillColor = sprite.gridColor;
+                    });
+                } else {
+                    cell.box.drawAttrs.fillColor = colorScheme.active;
+                    var pm = legalMoves(this, r, c, true);
+                    this.potentialMoves = pm;
+                    this.active = [r, c];
+                    for (var i = 0; i < pm.length; i++) { 
+                        //Color in potential moves
+                        grid.get(pm[i][0], pm[i][1]).box.drawAttrs.fillColor = colorScheme.move;
+                    }
+                }
+            } else if (pairIn(this.potentialMoves, r, c)) {
+                //case 3 ^
+                this.move(this.active, [r, c]);
+                //interfacing
+                this.active = null; 
                 this.potentialMoves = [];
-                grid.foreach(function(sprite) {
-                    sprite.box.drawAttrs.fillColor = sprite.gridColor;
-                });
-            } else {
-                cell.box.drawAttrs.fillColor = colorScheme.active;
-                var pm = legalMoves(this, r, c, true);
-                this.potentialMoves = pm;
-                this.active = [r, c];
-                for (var i = 0; i < pm.length; i++) { 
-                    //Color in potential moves
-                    grid.get(pm[i][0], pm[i][1]).box.drawAttrs.fillColor = colorScheme.move;
+                //switch turn
+                if (this.turn == white) {
+                    this.turn = black;
+                    gv.message("Black's turn");
+                } else {
+                    this.turn = white;
+                    gv.message("White's turn");
+                }
+                this.updateGrid();
+                this.updateGameStatus();
+                if (this.gameOver) {
+                    gv.message(this.gameOverStatus);
+                } else {
+                    if (gv["flip board"]) {
+                        grid.rotate(180);
+                        this.updateGrid();
+                    }
+                }
+            } 
+        }
+    }
+    this.updateGameStatus = function() { //do later: Draw by repeated position, ugh
+        var totalMovesBlack = 0;
+        var totalMovesWhite = 0;
+        var moves
+        for (var i = 0; i < 8; i++) {
+            for (var k = 0; k < 8; k++) {
+                if (inArr(white, this.board[i][k])) {
+                    moves = legalMoves(this, i, k, true);
+                    totalMovesWhite += moves.length;
+                } else if (inArr(black, this.board[i][k])) {
+                    moves = legalMoves(this, i, k, true);
+                    totalMovesBlack += moves.length;
                 }
             }
-        } else if (pairIn(this.potentialMoves, r, c)) {
-            //case 3 ^
-            this.move(this.active, [r, c]);
-            //interfacing
-            this.active = null; 
-            this.potentialMoves = [];
-            //switch turn
-            if (this.turn == white) {
-                this.turn = black;
-                gv.message("Black's turn");
+        }
+        if (this.turn == black && totalMovesBlack == 0) {
+            if (isCheck(this, black, [], [], true)) {
+                this.gameOverStatus = "White wins by checkmate";
+                this.gameOver = true;
             } else {
-                this.turn = white;
-                gv.message("White's turn");
+                this.gameOverStatus = "Stalemate";
+                this.gameOver = true;
             }
-            this.updateGrid();
-            //check for win/stale
-            if (gv["flip board"]) {
-                grid.rotate(180);
-                this.updateGrid();
+        } else if (this.turn == white && totalMovesWhite == 0) {
+            if (isCheck(this, white, [], [], true)) {
+                this.gameOverStatus = "Black wins by checkmate";
+                this.gameOver = true;
+            } else {
+                this.gameOverStatus = "Stalemate";
+                this.gameOver = true;
             }
-        } 
-    },
+        }
+    }
     this.updateGrid = function() {
         var self = this;
         grid.foreach(function(sprite) {
@@ -208,7 +251,7 @@ function Game() {
     }
 }
 
-function isCheck(g, side, l1, l2) {
+function isCheck(g, side, l1, l2, pass) {
     var king = "bK";
     var attackers = white;
     if (side == white) {
@@ -219,7 +262,9 @@ function isCheck(g, side, l1, l2) {
     var board = gg.board;
     var moves;
     //apply move
-    gg.move(l1, l2);
+    if (!pass) {
+        gg.move(l1, l2);
+    }
     for (var i = 0; i < 8; i++) {
         for (var k = 0; k < 8; k++) {
             if (inArr(attackers, board[i][k])) {
@@ -429,14 +474,14 @@ function legalMoves(g, r, c, check) {
             if (((piece == "wK" && !g.whiteCastled) && (c == 4 && r == 7)) || ((piece == "bK" && !g.blackCastled) && (c == 4 && r == 0))) {
                 if (((piece == "wK" && g.whiteCanCastleKs) && board[7][7] == "wR") || ((piece == "bK" && g.blackCanCastleKs))){// && board[0][7] == "bR")){
                     if (board[r][c+1] == EMPTY && board[r][c+2] == EMPTY) {
-                        if (!isCheck(g, friendlies, [r, c], [r, c+1])) {
+                        if (!isCheck(g, friendlies, [r, c], [r, c+1], false)) {
                             result.push([r, c+2]);
                         }
                     } 
                 } 
                 if (((piece == "wK" && g.whiteCanCastleQs) && board[7][0] == "wR") || ((piece == "bK" && g.blackCanCastleQs) && board[0][0] == "bR")){
                     if ((board[r][c-1] == EMPTY && board[r][c-2] == EMPTY) && board[r][c-3] == EMPTY) {
-                        if (!isCheck(g, friendlies, [r, c], [r, c-1]) && !isCheck(g, friendlies, [r, c], [r, c-2])) {
+                        if (!isCheck(g, friendlies, [r, c], [r, c-1], false) && !isCheck(g, friendlies, [r, c], [r, c-2], false)) {
                             result.push([r, c-2]);
                         }
                     } 
@@ -449,7 +494,7 @@ function legalMoves(g, r, c, check) {
         var t = [r, c];
         for (var i = 0; i < result.length; i++) {
             //for some reason breaks
-            if (!isCheck(g, friendlies, t, result[i])) {
+            if (!isCheck(g, friendlies, t, result[i], false)) {
                 finalResult.push(result[i]);
             }
         }
