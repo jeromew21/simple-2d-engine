@@ -50,16 +50,16 @@ function copyObj(arr) {
 function Game() {
     this.init = function() {
         this.turn = white;
-        this.whiteCastled = false;
-        this.blackCastled = false;
+        this.whitecanCastle = false;
+        this.blackcanCastle = false;
         this.lastMove = null;
         this.board = copyObj(startingBoard);
         this.updateGrid();
         gv.message("White's turn");
     }
     this.turn = white;
-    this.whiteCastled = false;
-    this.blackCastled = false;
+    this.whitecanCastle = false;
+    this.blackcanCastle = false;
     this.lastMove = null;
     this.board = copyObj(startingBoard);
     this.active = null;
@@ -153,7 +153,6 @@ function isCheck(g, side, l1, l2) {
             if (inArr(attackers, board[i][k])) {
                 moves = legalMoves(gg, i, k, false); 
                 for (var m = 0; m < moves.length; m++) {
-                    print(board[moves[m][0]][moves[m][1]])
                     if (board[moves[m][0]][moves[m][1]] == king) {
                         return true;
                     }
@@ -339,7 +338,13 @@ function legalMoves(g, r, c, check) {
                     }
                 }
             }
-            //add castles
+            //add castles -- Make sure clear 3 spaces queenside (c-n), 2 spaces kingside (c+n)
+            //king cannot pass thru check
+            //Can only do once, and if either piece has moved, then cannot
+            if ((piece == "wK" && g.whitecanCastle) || (piece == "bK" && g.blackcanCastle)) {
+                //Queenside
+                if ()
+            }
         } 
     }
     if (check) {
