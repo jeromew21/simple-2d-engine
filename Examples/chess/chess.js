@@ -294,6 +294,13 @@ function legalMoves(g, r, c, check) {
                         result.push([r+1, c+1]);
                     }
                 }
+                if (r == 4) {
+                    if (Math.abs(g.lastMove[0][1]-c) == 1 && g.lastMove[0][1] == g.lastMove[1][1]) {
+                        if ((g.lastMove[1][0] == 4 && g.lastMove[0][0] == 6) && board[g.lastMove[1][0]][g.lastMove[1][1]] == "wP") {
+                            result.push([r+1, g.lastMove[0][1]]);
+                        }
+                    }
+                }
             }
         } else if (piece == "wN" || piece == "bN") {
             for (var i = -2; i < 3; i++) {
