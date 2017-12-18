@@ -14,6 +14,8 @@ var colorScheme = {
     move: "#FFFF54"
 }
 
+var imagesPath = "pieces";
+
 var startingBoard = [
     ["bR",    "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
     ["bP",    "bP", "bP", "bP", "bP", "bP", "bP", "bP"],
@@ -176,7 +178,7 @@ function Game() {
                 sprite.box.text = EMPTY;
             } else {    
                 sprite.box.drawAttrs.image = true;
-                sprite.box.drawAttrs.imageSrc = "Examples/chess/pieces/" + self.board[sprite.row][sprite.col] + ".png";
+                sprite.box.drawAttrs.imageSrc = "Examples/chess/" + imagesPath + "/" + self.board[sprite.row][sprite.col] + ".png";
                 sprite.box.refreshImage();
             }
         });
