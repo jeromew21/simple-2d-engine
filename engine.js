@@ -126,7 +126,11 @@ var globals = {
         $("#message").html("<h2>" + m + "</h2>");
     },
     get: function(f) {
-        return this[f](); //Returns a value returned by a global function 
+        if ($.isFunction(this[f])) {
+            return this[f](); //Returns a value returned by a global function 
+        } else {
+            return this[f];
+        }
     }
 }
 
