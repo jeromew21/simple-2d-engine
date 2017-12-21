@@ -82,9 +82,13 @@ var setup = {
                     }
                     
                     $("#right-col").append("<p><label for='" + idGen + "'>" + title + "</label><input type='checkbox' name='" + idGen + "' id='" + idGen + "' " + checked + "/></p>");
-                    globals[key] = function() {
-                        return document.getElementById(idGen).checked;
-                    }
+                    var f = function() { //Creates a new scope
+                        var id = idGen;
+                        globals[key] = function() {
+                            return document.getElementById(id).checked;
+                        }
+                    };
+                    f();
                 } else if (inner["type"] == "options") {
                     optionsHtml = "";
                     optionsJson = inner["options"];
@@ -96,9 +100,13 @@ var setup = {
                         optionsHtml += "<option value='" + val + "' " + selected + ">" + optionsJson[val] + "</option>";
                     }
                     $("#right-col").append("<p><label for='" + idGen + "'>" + title + "</label><select name='" + idGen + "' id='" + idGen + "' " + checked + ">" + optionsHtml + "</select></p>");
-                    globals[key] = function() {
-                        return $("#" + idGen).val();
+                    var f = function() { //Create new scope
+                        var id = idGen;
+                        globals[key] = function() {
+                            return $("#" + id).val();
+                        }
                     }
+                    f();
                 }
             }
         }
@@ -578,8 +586,8 @@ var grid = {
     init: function(r, c) {
         this.rows = r;
         this.cols = c;
-        width = gv.width / grid.rows;
-        height = gv.height / grid.cols;
+        var width = gv.width / this.rows;
+        var height = gv.height / this.cols;
         this.tiles = [];
         for (var i = 0; i < this.rows; i++) {
             this.tiles.push([])
@@ -592,6 +600,15 @@ var grid = {
             }
         }
         draw.overdraw = this.draw
+    },
+    resetRotation: function() {
+        var width = gv.width / this.rows;
+        var height = gv.height / this.cols;
+        for (var i = 0; i < this.rows; i++) {
+            for (var k = 0; k < this.cols; k++) {
+                this.tiles[i][k].box.set((width * k) + (width/2), (height * i) + (height/2), width, height, 0)
+            }
+        }
     },
     rotate: function(amt) {
         if (this.rows == this.cols) {

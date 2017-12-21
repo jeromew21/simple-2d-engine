@@ -50,7 +50,10 @@ function copyObj(arr) {
 //gv["flip board"] = true;
 
 function Game() {
-    this.init = function() {
+    this.init = function(t) {
+        this.gameType = t;
+        this.active = null;
+        this.potentialMoves = [];
         this.turn = white;
         this.whiteCastled = false;
         this.blackCastled = false;
@@ -60,10 +63,26 @@ function Game() {
         this.blackCanCastleQs = true;
         this.lastMove = null;
         this.board = copyObj(startingBoard);
-        this.updateGrid();
         gv.message("White's turn");
         this.gameOver = false;
         this.gameOverStatus = "";
+        this.updateGrid();
+        grid.resetRotation();
+        if (t == "0player") {
+            var self = this;
+            f = function() {
+                self.aiMove(self.turn);
+                self.updateGrid();
+                self.switchTurn();
+                self.updateGameStatus();
+                if (!self.gameOver) {
+                    setTimeout(f, 10)
+                } else {
+                    gv.message(self.gameOverStatus);
+                }
+            }
+            f();
+        }
     }
     this.turn = white;
     this.whiteCastled = false;
@@ -78,6 +97,7 @@ function Game() {
     this.board = copyObj(startingBoard);
     this.active = null;
     this.potentialMoves = [];
+    this.gameType = "";
     this.handleClick = function(r, c) {
         if (!this.gameOver) {
             grid.foreach(function(sprite) {
@@ -116,20 +136,13 @@ function Game() {
                 //interfacing
                 this.active = null; 
                 this.potentialMoves = [];
-                //switch turn
-                if (this.turn == white) {
-                    this.turn = black;
-                    gv.message("Black's turn");
-                } else {
-                    this.turn = white;
-                    gv.message("White's turn");
-                }
+                this.switchTurn();
                 this.updateGrid();
                 this.updateGameStatus();
                 if (this.gameOver) {
                     gv.message(this.gameOverStatus);
                 } else {
-                    if (gv["flip board"]) {
+                    if (gv.get("flipBoard")) {
                         grid.rotate(180);
                         this.updateGrid();
                     }
@@ -137,10 +150,19 @@ function Game() {
             } 
         }
     }
+    this.switchTurn = function() {
+        if (this.turn == white) {
+            this.turn = black;
+            gv.message("Black's turn");
+        } else {
+            this.turn = white;
+            gv.message("White's turn");
+        }
+    }
     this.updateGameStatus = function() { //do later: Draw by repeated position, ugh
         var totalMovesBlack = 0;
         var totalMovesWhite = 0;
-        var moves
+        var moves;
         for (var i = 0; i < 8; i++) {
             for (var k = 0; k < 8; k++) {
                 if (inArr(white, this.board[i][k])) {
@@ -153,26 +175,25 @@ function Game() {
             }
         }
         if (this.turn == black && totalMovesBlack == 0) {
+            this.gameOver = true;
             if (isCheck(this, black, [], [], true)) {
                 this.gameOverStatus = "White wins by checkmate";
-                this.gameOver = true;
             } else {
                 this.gameOverStatus = "Stalemate";
-                this.gameOver = true;
             }
         } else if (this.turn == white && totalMovesWhite == 0) {
+            this.gameOver = true;
             if (isCheck(this, white, [], [], true)) {
                 this.gameOverStatus = "Black wins by checkmate";
-                this.gameOver = true;
             } else {
                 this.gameOverStatus = "Stalemate";
-                this.gameOver = true;
             }
         }
     }
     this.updateGrid = function() {
         var self = this;
         grid.foreach(function(sprite) {
+            sprite.box.drawAttrs.fillColor = sprite.gridColor;
             if (self.board[sprite.row][sprite.col] == EMPTY) {
                 sprite.box.drawAttrs.image = false;
                 sprite.box.text = EMPTY;
@@ -250,6 +271,27 @@ function Game() {
             }
         }
         this.lastMove = [l1, l2];
+    }
+    this.aiMove = function(side) {
+        var result = [];
+        var moves;
+        for (var i = 0; i < 8; i++) {
+            for (var k = 0; k < 8; k++) {
+                if (inArr(side, this.board[i][k])) {
+                    moves = legalMoves(this, i, k, true);
+                    for (var m = 0; m < moves.length; m++) {
+                        result.push([
+                            [i, k],
+                            moves[m]
+                        ]);
+                    }
+                } 
+            }
+        }
+        var m = choice(result);
+        print(result)
+        print(m)
+        this.move(m[0], m[1]);
     }
 }
 
@@ -463,7 +505,7 @@ function legalMoves(g, r, c, check) {
             for (var i = 0; i < 8; i++) {
                 dx = walks[i][0];
                 dy = walks[i][1];
-                if (!(r+dy > 7 || r+dy < 0) || (c+dx > 7 || c+dx < 0)) {
+                if ((r+dy <= 7 && r+dy >= 0) && (c+dx <= 7 && c+dx >= 0)) {
                     if (!inArr(friendlies, board[r+dy][c+dx])) {
                         if (inArr(enemies, board[r+dy][c+dx]) || board[r+dy][c+dx] == EMPTY) {
                             result.push([r+dy, c+dx]);
@@ -507,7 +549,7 @@ function legalMoves(g, r, c, check) {
 }
 
 game = new Game();
-game.init();
+game.init("2player");
 
 //Populate and checker the grid
 letters = "abcdefgh".split("");
@@ -558,7 +600,7 @@ setup.createOptions({
             "0player": "No players"
         },
         "default": "2player"
-    }
+    },
 });
 
 setup.createButton("new game", function(e) {
