@@ -547,6 +547,15 @@ setup.createOptions({
     "flipBoard": {
         "type": "boolean",
         "title": "Flip Board"
+    },
+    "gameType": {
+        "type": "options",
+        "title": "",
+        "options": {
+            "1playerWhite": "1 Player, Play as White",
+            "2player": "2 Players"
+        },
+        "default": "2player"
     }
 });
 

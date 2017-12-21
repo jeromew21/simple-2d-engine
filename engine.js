@@ -57,33 +57,48 @@ var setup = {
                 "listKeyValue" : {
                     "type": "options",
                     "title": "Bar"
-                    "options": ["op1", "op2"]
-                    "default": "op1"
+                    "options": {
+                        "value1": "title 1",
+                        "value2": "title 2",
+                    }
+                    "default": "value1"
                 }
             }
         
         */
-        var inner, idGen, checked, title;
+        var inner, idGen, checked, title, optionsHtml, optionsJson, selected;
         for (var key in o) {
             if (!gv.hasOwnProperty(key)) {
                 inner = o[key];                   
                 idGen = Math.random().toString(36).substring(7);
-                title = ""
+                title = key;
+                if (inner["title"] != undefined) {
+                    title = inner["title"];
+                }
                 if (inner["type"] == "boolean") {
                     checked = "";
                     if (inner["default"]) {
                         checked = "true";
                     }
-                    title = key;
-                    if (inner["title"]) {
-                        title = inner["title"];
-                    }
-                    $("#right-col").append("<p><label>" + title + "<label><input type='checkbox' id='" + idGen + "' " + checked + "/></p>");
+                    
+                    $("#right-col").append("<p><label for='" + idGen + "'>" + title + "</label><input type='checkbox' name='" + idGen + "' id='" + idGen + "' " + checked + "/></p>");
                     globals[key] = function() {
                         return document.getElementById(idGen).checked;
                     }
                 } else if (inner["type"] == "options") {
-
+                    optionsHtml = "";
+                    optionsJson = inner["options"];
+                    selected = "";
+                    for (var val in optionsJson) {
+                        if (val == inner["default"]) {
+                            selected = "selected";
+                        }
+                        optionsHtml += "<option value='" + val + "' " + selected + ">" + optionsJson[val] + "</option>";
+                    }
+                    $("#right-col").append("<p><label for='" + idGen + "'>" + title + "</label><select name='" + idGen + "' id='" + idGen + "' " + checked + ">" + optionsHtml + "</select></p>");
+                    globals[key] = function() {
+                        return $("#" + idGen).val();
+                    }
                 }
             }
         }
