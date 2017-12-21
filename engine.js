@@ -44,13 +44,54 @@ var setup = {
         this.title(t);
         this.night();
         this.resizeToScreen();
-        $("#canvas-wrapper").append("<div style='float:left; margin:15px' id='rightCol'><div id='message'></div></div>");
+        $("#canvas-wrapper").append("<div style='float:left; margin-left:25px' id='right-col'><div id='message'></div></div>");
     },
     createOptions: function(o) {
-        //Fill this in at some point
+        /*
+            {
+                "booleanKeyValue" : {
+                    "type": "boolean",
+                    "title": "Foo"
+                    "default": true
+                }
+                "listKeyValue" : {
+                    "type": "options",
+                    "title": "Bar"
+                    "options": ["op1", "op2"]
+                    "default": "op1"
+                }
+            }
+        
+        */
+        var inner, idGen, checked, title;
+        for (var key in o) {
+            if (!gv.hasOwnProperty(key)) {
+                inner = o[key];                   
+                idGen = Math.random().toString(36).substring(7);
+                title = ""
+                if (inner["type"] == "boolean") {
+                    checked = "";
+                    if (inner["default"]) {
+                        checked = "true";
+                    }
+                    title = key;
+                    if (inner["title"]) {
+                        title = inner["title"];
+                    }
+                    $("#right-col").append("<p><label>" + title + "<label><input type='checkbox' id='" + idGen + "' " + checked + "/></p>");
+                    globals[key] = function() {
+                        return document.getElementById(idGen).checked;
+                    }
+                } else if (inner["type"] == "options") {
+
+                }
+            }
+        }
     },
     createButton: function(title, e) {
-
+        var idGen = Math.random().toString(36).substring(7);
+        $("#right-col").append("<p><button id='" + idGen + "'>" + title + "</button></p>");
+        $("#" + idGen).bind("click", e);
     }
 }
 
@@ -67,7 +108,10 @@ var globals = {
         $("body").css("cursor", c)
     },
     message: function(m) {
-        $("#message").html(m);
+        $("#message").html("<h2>" + m + "</h2>");
+    },
+    get: function(f) {
+        return this[f](); //Returns a value returned by a global function 
     }
 }
 

@@ -14,7 +14,7 @@ var colorScheme = {
     move: "#FFFF54"
 }
 
-var imagesPath = "pieces";
+var imagesPath = "Examples/chess/pieces";
 
 var startingBoard = [
     ["bR",    "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
@@ -178,7 +178,7 @@ function Game() {
                 sprite.box.text = EMPTY;
             } else {    
                 sprite.box.drawAttrs.image = true;
-                sprite.box.drawAttrs.imageSrc = "Examples/chess/" + imagesPath + "/" + self.board[sprite.row][sprite.col] + ".png";
+                sprite.box.drawAttrs.imageSrc = imagesPath + "/" + self.board[sprite.row][sprite.col] + ".png";
                 sprite.box.refreshImage();
             }
         });
@@ -540,4 +540,16 @@ grid.foreach(function(sprite) {
                         sprite.box.w, sprite.box.h, sprite.box.dir);
         sprite.box2.draw();
     }
+})
+
+//Create some buttons
+setup.createOptions({
+    "flipBoard": {
+        "type": "boolean",
+        "title": "Flip Board"
+    }
+});
+
+setup.createButton("new game", function(e) {
+    game.init();
 })
