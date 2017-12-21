@@ -88,8 +88,8 @@ var setup = {
                 } else if (inner["type"] == "options") {
                     optionsHtml = "";
                     optionsJson = inner["options"];
-                    selected = "";
                     for (var val in optionsJson) {
+                        selected = "";
                         if (val == inner["default"]) {
                             selected = "selected";
                         }

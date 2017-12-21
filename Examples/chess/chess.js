@@ -552,13 +552,15 @@ setup.createOptions({
         "type": "options",
         "title": "",
         "options": {
-            "1playerWhite": "1 Player, Play as White",
-            "2player": "2 Players"
+            "1playerWhite": "1 Player | Play as White",
+            "1playerBlack": "1 Player | Play as Black",
+            "2player": "2 Players",
+            "0player": "No players"
         },
         "default": "2player"
     }
 });
 
 setup.createButton("new game", function(e) {
-    game.init();
+    game.init(gv.get("gameType"));
 })
