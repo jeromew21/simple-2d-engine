@@ -20,7 +20,7 @@ var setup = {
         $("#canvas-1").attr("height", h).attr("width", w).css("float", "left");
     },
     border: function() {
-        $("#canvas-1").css("border", "2px darkgrey solid")
+        $("#canvas-1").css("border", "3px darkgrey outset")
     },
     night: function() {
         $("body").css("background-color", "#303030").css("color", "rgba(255, 255, 255, 0.8)");
@@ -30,6 +30,9 @@ var setup = {
         $("#canvas-wrapper").prepend("<h1 id='mainTitle'>" + t + "</h1>").css("padding-left", "40px");
         $("#mainTitle").css("font-family", "Helvetica, Arial").css("margin-top", "45px").css("margin-bottom", "45px")
         document.title = t;
+    },
+    background: function(c) {
+        $("#canvas-1").css("background-color", c);
     },
     resizeToScreen: function() {
         globals.width = window.innerWidth - 100;

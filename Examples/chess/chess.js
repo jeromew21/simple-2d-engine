@@ -1,5 +1,6 @@
 setup.init("Chess");
 setup.setDimensions(600, 600);
+setup.border()
 
 grid.init(8, 8);
 
