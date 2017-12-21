@@ -82,6 +82,13 @@ function Game() {
                 }
             }
             f();
+        } else if (t == "1playerBlack") {
+            if (gv.get("flipBoard")) {
+                grid.rotate(180);
+            }
+            this.aiMove(this.turn);
+            this.updateGrid();
+            this.switchTurn();
         }
     }
     this.turn = white;
@@ -106,12 +113,12 @@ function Game() {
 
             //Possiblities: 
             //1. Our turn and a friendly piece -- color possible moves as well -- set active Piece -- Remove all statuses -- Add statuses
-            //2. Our turn and a empty space / enemy piece  -- Defaults
-            //3. Our turn and clicking on a possible move
+            //2. Our turn and clicking on a possible move
             var cell = grid.get(r, c);
             var piece = this.board[r][c];
             var turn = this.turn;
-            if (inArr(turn, piece)) {
+            var gameType = gv.get("gameType");
+            if (inArr(turn, piece) && (((turn == white && gameType == "1playerWhite") || (turn == black && gameType == "1playerBlack")) || gameType == "2player")) {
                 //Case 1 ^
                 if (this.active != null && (this.active[0] == r && this.active[1] == c)) {
                     //Clicked on already active spot
@@ -131,20 +138,28 @@ function Game() {
                     }
                 }
             } else if (pairIn(this.potentialMoves, r, c)) {
-                //case 3 ^
+                //case 2 ^
                 this.move(this.active, [r, c]);
                 //interfacing
                 this.active = null; 
                 this.potentialMoves = [];
-                this.switchTurn();
                 this.updateGrid();
+                this.switchTurn();
                 this.updateGameStatus();
                 if (this.gameOver) {
                     gv.message(this.gameOverStatus);
                 } else {
-                    if (gv.get("flipBoard")) {
+                    if (gameType == "2player" && gv.get("flipBoard")) {
                         grid.rotate(180);
                         this.updateGrid();
+                    } else if (gameType == "1playerWhite" || gameType == "1playerBlack") {
+                        this.aiMove(this.turn);
+                        this.updateGrid();
+                        this.switchTurn();
+                        this.updateGameStatus();
+                        if (this.gameOver) {
+                            gv.message(this.gameOverStatus);
+                        }
                     }
                 }
             } 
@@ -289,8 +304,6 @@ function Game() {
             }
         }
         var m = choice(result);
-        print(result)
-        print(m)
         this.move(m[0], m[1]);
     }
 }
