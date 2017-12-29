@@ -16,7 +16,15 @@ var colorScheme = {
     move: "#FFFF54"
 }
 
-var imagesPath = "Examples/chess/pieces";
+var letters = "abcdefgh".split("");
+
+var paths = {
+    "ugly": "Examples/chess/pieces",
+    "merida": "Examples/chess/pieces/merida/80",
+    "alpha": "Examples/chess/pieces/alpha/80",
+}
+
+var imagesPath = paths["merida"];
 
 var startingBoard = [
     ["bR",    "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
@@ -40,6 +48,13 @@ function pairIn(arr, p1, p2) {
     return false;
 }
 
+function opponent(s) {
+    if (s == white) {
+        return black;
+    }
+    return white;
+}
+
 function Game() {
     this.init = function(t) {
         this.gameType = t;
@@ -52,6 +67,8 @@ function Game() {
         this.blackCanCastleKs = true;
         this.whiteCanCastleQs = true;
         this.blackCanCastleQs = true;
+        this.whiteMaterial = 39;
+        this.blackMaterial = 39;
         this.lastMove = null;
         this.board = copyObj(startingBoard);
         gv.message("White's turn");
@@ -59,6 +76,8 @@ function Game() {
         this.gameOverStatus = "";
         this.updateGrid();
         grid.resetRotation();
+        this.pgn = "1. ";
+        this.moveNumber = 1;
         if (t == "0player") {
             var self = this;
             f = function() {
@@ -82,6 +101,9 @@ function Game() {
             this.switchTurn();
         }
     }
+    
+    this.whiteMaterial = 39;
+    this.blackMaterial = 39;
     this.turn = white;
     this.whiteCastled = false;
     this.blackCastled = false;
@@ -96,66 +118,9 @@ function Game() {
     this.active = null;
     this.potentialMoves = [];
     this.gameType = "";
-    this.handleClick = function(r, c) {
-        if (!this.gameOver) {
-            grid.foreach(function(sprite) {
-                sprite.box.drawAttrs.fillColor = sprite.gridColor;
-            }); //Clear all added colors
-
-            //Possiblities: 
-            //1. Our turn and a friendly piece -- color possible moves as well -- set active Piece -- Remove all statuses -- Add statuses
-            //2. Our turn and clicking on a possible move
-            var cell = grid.get(r, c);
-            var piece = this.board[r][c];
-            var turn = this.turn;
-            var gameType = gv.get("gameType");
-            if (inArr(turn, piece) && (((turn == white && gameType == "1playerWhite") || (turn == black && gameType == "1playerBlack")) || gameType == "2player")) {
-                //Case 1 ^
-                if (this.active != null && (this.active[0] == r && this.active[1] == c)) {
-                    //Clicked on already active spot
-                    this.active = null;
-                    this.potentialMoves = [];
-                    grid.foreach(function(sprite) {
-                        sprite.box.drawAttrs.fillColor = sprite.gridColor;
-                    });
-                } else {
-                    cell.box.drawAttrs.fillColor = colorScheme.active;
-                    var pm = legalMoves(this, r, c, true);
-                    this.potentialMoves = pm;
-                    this.active = [r, c];
-                    for (var i = 0; i < pm.length; i++) { 
-                        //Color in potential moves
-                        grid.get(pm[i][0], pm[i][1]).box.drawAttrs.fillColor = colorScheme.move;
-                    }
-                }
-            } else if (pairIn(this.potentialMoves, r, c)) {
-                //case 2 ^
-                this.move(this.active, [r, c]);
-                //interfacing
-                this.active = null; 
-                this.potentialMoves = [];
-                this.updateGrid();
-                this.switchTurn();
-                this.updateGameStatus();
-                if (this.gameOver) {
-                    gv.message(this.gameOverStatus);
-                } else {
-                    if (gameType == "2player" && gv.get("flipBoard")) {
-                        grid.rotate(180);
-                        this.updateGrid();
-                    } else if (gameType == "1playerWhite" || gameType == "1playerBlack") {
-                        this.aiMove(this.turn);
-                        this.updateGrid();
-                        this.switchTurn();
-                        this.updateGameStatus();
-                        if (this.gameOver) {
-                            gv.message(this.gameOverStatus);
-                        }
-                    }
-                }
-            } 
-        }
-    }
+    this.pgn = "1. ";
+    this.moveNumber = 1;
+    
     this.switchTurn = function() {
         if (this.turn == white) {
             this.turn = black;
@@ -163,6 +128,8 @@ function Game() {
         } else {
             this.turn = white;
             gv.message("White's turn");
+            this.moveNumber += 1;
+            this.pgn += this.moveNumber + ". "
         }
     }
     this.updateGameStatus = function() { //do later: Draw by repeated position, ugh
@@ -183,16 +150,22 @@ function Game() {
         if (this.turn == black && totalMovesBlack == 0) {
             this.gameOver = true;
             if (isCheck(this, black, [], [], true)) {
+                this.blackMaterial = -1;
                 this.gameOverStatus = "White wins by checkmate";
+                this.pgn += "1-0";
             } else {
                 this.gameOverStatus = "Stalemate";
+                this.pgn += "1/2-1/2";
             }
         } else if (this.turn == white && totalMovesWhite == 0) {
             this.gameOver = true;
             if (isCheck(this, white, [], [], true)) {
+                this.whiteMaterial = -1;
                 this.gameOverStatus = "Black wins by checkmate";
+                this.pgn += "0-1";
             } else {
                 this.gameOverStatus = "Stalemate";
+                this.pgn += "1/2-1/2";
             }
         }
     }
@@ -203,43 +176,70 @@ function Game() {
             if (self.board[sprite.row][sprite.col] == EMPTY) {
                 sprite.box.drawAttrs.image = false;
                 sprite.box.text = EMPTY;
+                sprite.box2.inactive = !gv.get("showCoords");
             } else {    
+                sprite.box2.inactive = true;
                 sprite.box.drawAttrs.image = true;
                 var oldImageSrc = sprite.box.drawAttrs.imageSrc;
                 sprite.box.drawAttrs.imageSrc = imagesPath + "/" + self.board[sprite.row][sprite.col] + ".png";
                 if (oldImageSrc != sprite.box.drawAttrs.imageSrc) {
                     sprite.box.refreshImage();
                 }
+                
             }
         });
     }
+    
     this.move = function(l1, l2) { 
         var piece = this.board[l1[0]][l1[1]];
         if (piece == "wP" && l2[0] == 0) {
+            this.whiteMaterial += 8;
             piece = "wQ";
         }
         if (piece == "bP" && l2[0] == 7) {
+            this.blackMaterial += 8;
             piece = "bQ";
         }
         
-        //en passant
-        if (piece == "wP") {
-            if (l1[1] != l2[1]) {
-                if (this.board[l2[0]][l2[1]] == EMPTY) {
-                    this.board[l2[0]+1][l2[1]] = EMPTY;
-                }
+        
+
+        this.board[l1[0]][l1[1]] = EMPTY; //remove from current location
+        if (piece.charAt(1) == "P") {
+            if (this.board[l2[0]][l2[1]] != EMPTY) {
+                this.pgn += letters[l1[1]];
             }
+        } else {
+            this.pgn += piece.charAt(1);
         }
-        if (piece == "bP") {
-            if (l1[1] != l2[1]) {
-                if (this.board[l2[0]][l2[1]] == EMPTY) {
-                    this.board[l2[0]-1][l2[1]] = EMPTY;
-                }
+
+        //en passant
+        if (piece == "wP" && l1[1] != l2[1]) {
+            if (this.board[l2[0]][l2[1]] == EMPTY) {
+                this.board[l2[0]+1][l2[1]] = EMPTY;
+                this.blackMaterial -= 1;
+                this.pgn += "x";
+            }
+        } else if (piece == "bP" && l1[1] != l2[1]) {
+            if (this.board[l2[0]][l2[1]] == EMPTY) {
+                this.board[l2[0]-1][l2[1]] = EMPTY;
+                this.whiteMaterial -= 1;
+                this.pgn += "x";
+            }
+        } else {
+            var oldCellValue = this.board[l2[0]][l2[1]];
+            if (inArr(black, oldCellValue)) {
+                //Took a black piece
+                this.blackMaterial -= pieceValueLookup[oldCellValue];
+                this.pgn += "x";
+            } else if (inArr(white, oldCellValue)) {
+                //Took a white piece
+                this.whiteMaterial -= pieceValueLookup[oldCellValue];
+                this.pgn += "x";
             }
         }
 
-        this.board[l1[0]][l1[1]] = EMPTY; //remove from current location
         this.board[l2[0]][l2[1]] = piece; //place at new location
+        this.pgn += letters[l2[1]] + (8 - l2[0]) + " "; 
 
         var rook;
         if (piece == "wK") {
@@ -285,8 +285,90 @@ function Game() {
         //Make an AI move
         //Before AI though make more game metadata id. count turns
         //    and make sure legalMoves is optimized
-        var m = getAIMove(this, turn, 0);
+        var m = getAIMove(this, turn, 1);
         this.move(m[0], m[1]);
+    }
+}
+
+var pieceValueLookup = {
+    "wP": 1,
+    "wN": 3,
+    "wB": 3,
+    "wR": 5,
+    "wQ": 9,
+    "bP": 1,
+    "bN": 3,
+    "bB": 3,
+    "bR": 5,
+    "bQ": 9
+}
+
+function handleClick(g, r, c) {
+    if (!g.gameOver) {
+        grid.foreach(function(sprite) {
+            sprite.box.drawAttrs.fillColor = sprite.gridColor;
+        }); //Clear all added colors
+
+        //Possiblities: 
+        //1. Our turn and a friendly piece -- color possible moves as well -- set active Piece -- Remove all statuses -- Add statuses
+        //2. Our turn and clicking on a possible move
+        var cell = grid.get(r, c);
+        var piece = g.board[r][c];
+        var turn = g.turn;
+        var gameType = gv.get("gameType");
+        if (inArr(turn, piece) && (((turn == white && gameType == "1playerWhite") || (turn == black && gameType == "1playerBlack")) || gameType == "2player")) {
+            //Case 1 ^
+            if (g.active != null && (g.active[0] == r && g.active[1] == c)) {
+                //Clicked on already active spot
+                g.active = null;
+                g.potentialMoves = [];
+                grid.foreach(function(sprite) {
+                    sprite.box.drawAttrs.fillColor = sprite.gridColor;
+                });
+            } else {
+                cell.box.drawAttrs.fillColor = colorScheme.active;
+                var pm = legalMoves(g, r, c, true);
+                g.potentialMoves = pm;
+                g.active = [r, c];
+                for (var i = 0; i < pm.length; i++) { 
+                    //Color in potential moves
+                    grid.get(pm[i][0], pm[i][1]).box.drawAttrs.fillColor = colorScheme.move;
+                }
+            }
+        } else if (pairIn(g.potentialMoves, r, c)) {
+            //case 2 ^
+            g.move(g.active, [r, c]);
+            //interfacing
+            g.active = null; 
+            g.potentialMoves = [];
+            g.updateGrid();
+            g.switchTurn();
+            g.updateGameStatus();
+            if (g.gameOver) {
+                gv.message(g.gameOverStatus);
+            } else {
+                if (gameType == "2player" && gv.get("flipBoard")) {
+                    grid.rotate(180);
+                    g.updateGrid();
+                } else if (gameType == "1playerWhite" || gameType == "1playerBlack") {
+                    g.aiMove(g.turn);
+                    g.updateGrid();
+                    g.switchTurn();
+                    g.updateGameStatus();
+                    if (g.gameOver) {
+                        gv.message(g.gameOverStatus);
+                    }
+                }
+            }
+        } 
+    }
+}
+
+function getMaterial(g, side) {
+    if (side == white) {
+        return g.whiteMaterial;
+    } else {
+        return g.blackMaterial;
     }
 }
 
@@ -308,6 +390,31 @@ function getAIMove(g, turn, depth) {
             }
         }
         return choice(result);
+    } if (depth == 1) {
+        var minEnemy = getMaterial(g, opponent(turn));
+        var result = getAIMove(g, turn, 0);
+        var moves, gCopy, mat;
+        for (var i = 0; i < 8; i++) {
+            for (var k = 0; k < 8; k++) {
+                if (inArr(turn, g.board[i][k])) {
+                    moves = legalMoves(g, i, k, true);
+                    for (var m = 0; m < moves.length; m++) {
+                        gcopy = copyObj(g);
+                        gcopy.move([i, k], moves[m]);
+                        mat = getMaterial(gcopy, opponent(turn));
+                        if (mat < minEnemy) {
+                            print(mat)
+                            minEnemy = mat;
+                            result = [
+                                [i, k],
+                                moves[m]
+                            ];
+                        }
+                    }
+                } 
+            }
+        }
+        return result;
     }
     return [[], []]
 }
@@ -565,11 +672,9 @@ function legalMoves(g, r, c, check) {
     return finalResult;
 }
 
-game = new Game();
-game.init("2player");
+var game = new Game();
 
 //Populate and checker the grid
-letters = "abcdefgh".split("");
 grid.foreach(function(sprite) {
     sprite.box.drawAttrs.fill = true;
     sprite.box.drawAttrs.border = false;
@@ -586,25 +691,23 @@ grid.foreach(function(sprite) {
 
     sprite.bind("click", function(self) {
         if (self.box.pointInside([gv.mouseX, gv.mouseY])) {
-            game.handleClick(self.row, self.col);
+            handleClick(game, self.row, self.col);
         }
     })
-    
-    if (grid.getCellWidth() > 70) {
-        //Add box w/ relative positioning for coordinate
-        sprite.box2 = new BoundingBox(); //Make child of box
-        sprite.box2.text = letters[sprite.col] + "" + (8-sprite.row);
-        sprite.box2.drawAttrs.border = false;
-        sprite.box2.drawAttrs.fontSize = 10;
+    //Add box w/ relative positioning for coordinate
+    sprite.box2 = new BoundingBox(); //Make child of box
+    sprite.box2.text = letters[sprite.col] + "" + (8-sprite.row);
+    sprite.box2.drawAttrs.border = false;
+    sprite.box2.drawAttrs.fontSize = 10;
 
-        sprite.draw = function() {
-            sprite.box.draw();
-            sprite.box2.set(sprite.box.x-sprite.box.w/2+10, 
-                            sprite.box.y+sprite.box.h/2-10, 
-                            sprite.box.w, sprite.box.h, sprite.box.dir);
-            sprite.box2.draw();
-        }
+    sprite.draw = function() {
+        sprite.box.draw();
+        sprite.box2.set(sprite.box.x-sprite.box.w/2+10, 
+                        sprite.box.y+sprite.box.h/2-10, 
+                        sprite.box.w, sprite.box.h, sprite.box.dir);
+        sprite.box2.draw();
     }
+    sprite.box2.inactive = true;
 })
 
 //Create some option input
@@ -616,12 +719,12 @@ setup.createOptions({
     "showCoords": {
         "type": "boolean",
         "title": "Show algebraic coords",
-        "default": true
+        "default": false
     },
     "drawBorder": {
         "type": "boolean",
         "title": "Draw Borders",
-        "default": true
+        "default": false
     },
     "gameType": {
         "type": "options",
@@ -636,6 +739,8 @@ setup.createOptions({
     },
 });
 
+draw.overdraw = function() {}; // override defualt grid behavior on startup
+
 setup.createButton("new game", function(e) {
     game.init(gv.get("gameType"));
 })
@@ -646,7 +751,7 @@ gv.bindInputChange(function(){
     } else {
         draw.overdraw = function() {};
     }
-    grid.foreach(function(sprite) {
-        sprite.box2.inactive = !gv.get("showCoords");
-    });
+    game.updateGrid();
 })
+
+game.init("2player");
