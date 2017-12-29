@@ -569,6 +569,7 @@ game.init("2player");
 letters = "abcdefgh".split("");
 grid.foreach(function(sprite) {
     sprite.box.drawAttrs.fill = true;
+    sprite.box.drawAttrs.border = false;
     sprite.box.drawAttrs.imageResize = true;
     sprite.box.drawAttrs.imageWidth = grid.getCellWidth();
     sprite.box.drawAttrs.imageHeight = grid.getCellHeight();
@@ -603,11 +604,21 @@ grid.foreach(function(sprite) {
     }
 })
 
-//Create some buttons
+//Create some option input
 setup.createOptions({
     "flipBoard": {
         "type": "boolean",
         "title": "Flip Board"
+    },
+    "showCoords": {
+        "type": "boolean",
+        "title": "Show algebraic coords",
+        "default": true
+    },
+    "drawBorder": {
+        "type": "boolean",
+        "title": "Draw Borders",
+        "default": true
     },
     "gameType": {
         "type": "options",
@@ -624,4 +635,15 @@ setup.createOptions({
 
 setup.createButton("new game", function(e) {
     game.init(gv.get("gameType"));
+})
+
+gv.bindInputChange(function(){
+    if (gv.get("drawBorder")) {
+        draw.overdraw = grid.draw;
+    } else {
+        draw.overdraw = function() {};
+    }
+    grid.foreach(function(sprite) {
+        sprite.box2.inactive = !gv.get("showCoords");
+    });
 })

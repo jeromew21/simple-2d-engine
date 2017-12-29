@@ -12,7 +12,8 @@ $("body").css({
     "user-select": "none",
     "-o-user-select": "none"
 });
- $("#canvas-1").css("margin-bottom", "20px");
+
+$("#canvas-1").css("margin-bottom", "20px");
 
 var setup = {
     setDimensions: function(w, h) {
@@ -94,7 +95,7 @@ var setup = {
                 if (inner["type"] == "boolean") {
                     checked = "";
                     if (inner["default"]) {
-                        checked = "true";
+                        checked = "checked";
                     }
                     
                     $("#right-col").append("<p><label for='" + idGen + "'>" + title + "</label><input type='checkbox' name='" + idGen + "' id='" + idGen + "' " + checked + "/></p>");
@@ -148,6 +149,9 @@ var globals = {
     },
     message: function(m) {
         $("#message").html("<h2>" + m + "</h2>");
+    },
+    bindInputChange : function(f) {
+        $("input, select").bind("change", f);
     },
     get: function(f) {
         if ($.isFunction(this[f])) {
@@ -382,8 +386,10 @@ function BoundingBox() {
         imageHeight: 0,
     }
     this.text = "";
+    this.inactive = false;
     this.image = null;
     this.draw = function() {
+        if (this.inactive) return;
         ctx.fillStyle = this.drawAttrs.fillColor
         ctx.strokeStyle = this.drawAttrs.borderColor
         ctx.lineWidth = this.drawAttrs.thickness
@@ -598,15 +604,15 @@ var grid = {
         return gv.height / this.cols;
     },
     draw: function() {
-        var width = gv.width / this.rows;
-        var height = gv.height / this.cols;
-        for (var i = 0; i < this.rows; i++) {
+        var width = gv.width / grid.rows;
+        var height = gv.height / grid.cols;
+        for (var i = 0; i < grid.rows; i++) {
             ctx.beginPath()
             ctx.moveTo(width * i, 0)
             ctx.lineTo(width * i, gv.height)
             ctx.stroke()
         }
-        for (var i = 0; i < this.cols; i++) {
+        for (var i = 0; i < grid.cols; i++) {
             ctx.beginPath()
             ctx.moveTo(0, height * i)
             ctx.lineTo(gv.width, height * i)
@@ -640,7 +646,7 @@ var grid = {
                 this.tiles[i].push(s)
             }
         }
-        draw.overdraw = this.draw
+        draw.overdraw = this.draw;
     },
     resetRotation: function() {
         var width = gv.width / this.rows;
@@ -696,11 +702,11 @@ var update = function() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     canvas.width = canvas.width;
     for (k in draw) {
-        draw[k]()
+        draw[k]();
     }
     for (var k = 0; k < sprites.length; k++) {
-        sprites[k].draw()
+        sprites[k].draw();
     }
-    draw.overdraw()
+    draw.overdraw();
 } 
 update();
