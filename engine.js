@@ -12,6 +12,7 @@ $("body").css({
     "user-select": "none",
     "-o-user-select": "none"
 });
+ $("#canvas-1").css("margin-bottom", "20px");
 
 var setup = {
     setDimensions: function(w, h) {
@@ -37,6 +38,18 @@ var setup = {
     resizeToScreen: function() {
         globals.width = window.innerWidth - 100;
         globals.height = window.innerHeight - 200;
+        $("#canvas-1").attr("height", globals.height).attr("width", globals.width);
+    },
+    resizeToScreenSquare: function() {
+        var width = window.innerWidth - 100;
+        var height = window.innerHeight - 200;
+        if (width < height) {
+            globals.width = width;
+            globals.height = width;
+        } else {
+            globals.width = height;
+            globals.height = height;
+        }
         $("#canvas-1").attr("height", globals.height).attr("width", globals.width);
     },
     dynamicResize: function() {
@@ -175,6 +188,14 @@ function choice(arr) {
     return arr[Math.floor(arr.length * Math.random())];
 }
 
+function inArr(arr, item) {
+    return arr.indexOf(item) > -1;
+}
+
+function copyObj(arr) {
+    return $.extend(true, {}, arr);
+}
+
 //Global event handlers
 $("#canvas-1").bind('contextmenu', function(e){
     return false;
@@ -285,6 +306,7 @@ function Sprite(name) {
         this.events[event] = func;
     }
     this.box.set(-999, -999, 0, 0, 0);
+    this.attrs = {};
     sprites.push(this);
 }
 
@@ -355,6 +377,9 @@ function BoundingBox() {
         textDir: 0,
         image: false, //make false
         imageSrc: null,
+        imageResize: false,
+        imageWidth: 0,
+        imageHeight: 0,
     }
     this.text = "";
     this.image = null;
@@ -399,7 +424,14 @@ function BoundingBox() {
             } else {
                 // paint image
                 if (this.image.complete && this.image.naturalHeight != 0) {
-                    ctx.drawImage(this.image, this.x-this.w/2, this.y-this.h/2);
+                    if (this.drawAttrs.imageResize) {
+                        ctx.drawImage(this.image, 
+                                      this.x-this.w/2, this.y-this.h/2, 
+                                      this.drawAttrs.imageWidth, 
+                                      this.drawAttrs.imageHeight);
+                    } else {
+                        ctx.drawImage(this.image, this.x-this.w/2, this.y-this.h/2);
+                    }
                 }
             }
         } 
@@ -559,16 +591,22 @@ var grid = {
     rows: 8,
     cols: 8,
     tiles: [],
+    getCellWidth: function() {
+        return gv.width / this.rows;
+    },
+    getCellHeight: function() {
+        return gv.height / this.cols;
+    },
     draw: function() {
-        width = gv.width/grid.rows
-        height = gv.height/grid.cols
-        for (var i = 0; i < grid.rows; i++) {
+        var width = gv.width / this.rows;
+        var height = gv.height / this.cols;
+        for (var i = 0; i < this.rows; i++) {
             ctx.beginPath()
             ctx.moveTo(width * i, 0)
             ctx.lineTo(width * i, gv.height)
             ctx.stroke()
         }
-        for (var i = 0; i < grid.cols; i++) {
+        for (var i = 0; i < this.cols; i++) {
             ctx.beginPath()
             ctx.moveTo(0, height * i)
             ctx.lineTo(gv.width, height * i)
@@ -639,6 +677,10 @@ var grid = {
                     }
                 }
             } else if (amt == 180) {
+                this.rotate(90);
+                this.rotate(90);
+            } else if (amt == 270) {
+                this.rotate(90);
                 this.rotate(90);
                 this.rotate(90);
             }

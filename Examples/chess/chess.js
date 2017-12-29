@@ -1,5 +1,6 @@
 setup.init("Chess");
 setup.setDimensions(600, 600);
+setup.resizeToScreenSquare();
 setup.border()
 
 grid.init(8, 8);
@@ -28,7 +29,7 @@ var startingBoard = [
     ["wR",    "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
 ];
 
-//helpers
+//chess-specific helpers
 function pairIn(arr, p1, p2) { 
     //Is [p1, p2] in arr (an Nx2 array)
     for (var i = 0; i < arr.length; i++) {
@@ -38,17 +39,6 @@ function pairIn(arr, p1, p2) {
     }
     return false;
 }
-
-function inArr(arr, item) {
-    return arr.indexOf(item) > -1;
-}
-
-function copyObj(arr) {
-    return $.extend(true, {}, arr);
-}
-
-//test
-//gv["flip board"] = true;
 
 function Game() {
     this.init = function(t) {
@@ -288,13 +278,23 @@ function Game() {
         }
         this.lastMove = [l1, l2];
     }
-    this.aiMove = function(side) {
+    this.aiMove = function(turn) {
+        //Make an AI move
+        //Before AI though make more game metadata id. count turns
+        //    and make sure legalMoves is optimized
+        var m = getAIMove(this, turn, 0);
+        this.move(m[0], m[1]);
+    }
+}
+
+function getAIMove(g, turn, depth) {
+    if (depth == 0) {
         var result = [];
         var moves;
         for (var i = 0; i < 8; i++) {
             for (var k = 0; k < 8; k++) {
-                if (inArr(side, this.board[i][k])) {
-                    moves = legalMoves(this, i, k, true);
+                if (inArr(turn, g.board[i][k])) {
+                    moves = legalMoves(g, i, k, true);
                     for (var m = 0; m < moves.length; m++) {
                         result.push([
                             [i, k],
@@ -304,9 +304,9 @@ function Game() {
                 } 
             }
         }
-        var m = choice(result);
-        this.move(m[0], m[1]);
+        return choice(result);
     }
+    return [[], []]
 }
 
 function isCheck(g, side, l1, l2, pass) {
@@ -569,6 +569,9 @@ game.init("2player");
 letters = "abcdefgh".split("");
 grid.foreach(function(sprite) {
     sprite.box.drawAttrs.fill = true;
+    sprite.box.drawAttrs.imageResize = true;
+    sprite.box.drawAttrs.imageWidth = grid.getCellWidth();
+    sprite.box.drawAttrs.imageHeight = grid.getCellHeight();
     if (sprite.row % 2 == sprite.col % 2) {
         sprite.gridColor = colorScheme.whiteCell
         sprite.box.drawAttrs.fillColor = colorScheme.whiteCell;
@@ -583,18 +586,20 @@ grid.foreach(function(sprite) {
         }
     })
     
-    //Add box w/ relative positioning 
-    sprite.box2 = new BoundingBox(); //Make child of box
-    sprite.box2.text = letters[sprite.col] + "" + (8-sprite.row);
-    sprite.box2.drawAttrs.border = false;
-    sprite.box2.drawAttrs.fontSize = 10;
+    if (grid.getCellWidth() > 70) {
+        //Add box w/ relative positioning for coordinate
+        sprite.box2 = new BoundingBox(); //Make child of box
+        sprite.box2.text = letters[sprite.col] + "" + (8-sprite.row);
+        sprite.box2.drawAttrs.border = false;
+        sprite.box2.drawAttrs.fontSize = 10;
 
-    sprite.draw = function() {
-        sprite.box.draw();
-        sprite.box2.set(sprite.box.x-sprite.box.w/2+10, 
-                        sprite.box.y+sprite.box.h/2-10, 
-                        sprite.box.w, sprite.box.h, sprite.box.dir);
-        sprite.box2.draw();
+        sprite.draw = function() {
+            sprite.box.draw();
+            sprite.box2.set(sprite.box.x-sprite.box.w/2+10, 
+                            sprite.box.y+sprite.box.h/2-10, 
+                            sprite.box.w, sprite.box.h, sprite.box.dir);
+            sprite.box2.draw();
+        }
     }
 })
 
