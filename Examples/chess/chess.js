@@ -205,8 +205,11 @@ function Game() {
                 sprite.box.text = EMPTY;
             } else {    
                 sprite.box.drawAttrs.image = true;
+                var oldImageSrc = sprite.box.drawAttrs.imageSrc;
                 sprite.box.drawAttrs.imageSrc = imagesPath + "/" + self.board[sprite.row][sprite.col] + ".png";
-                sprite.box.refreshImage();
+                if (oldImageSrc != sprite.box.drawAttrs.imageSrc) {
+                    sprite.box.refreshImage();
+                }
             }
         });
     }
