@@ -61,7 +61,7 @@ var setup = {
         this.title(t);
         this.night();
         this.resizeToScreen();
-        $("#canvas-wrapper").append("<div style='float:left; margin-left:25px' id='right-col'><div id='message'></div></div>");
+        $("#canvas-wrapper").append("<div style='float:left; margin-left:25px; width:250px;' id='right-col'><div id='message'></div></div>");
     },
     createOptions: function(o) {
         /*
@@ -116,9 +116,12 @@ var setup = {
                         }
                         optionsHtml += "<option value='" + val + "' " + selected + ">" + optionsJson[val] + "</option>";
                     }
+                    if (title.length > 0) {
+                        title += "&nbsp";
+                    }
                     $("#right-col").append("<p><label for='" + idGen + "'>" + title + "</label><select name='" + idGen + "' id='" + idGen + "' " + checked + ">" + optionsHtml + "</select></p>");
                     var f = function() { //Create new scope
-                        var id = idGen;
+                        var id = idGen; // Preserves current value
                         globals[key] = function() {
                             return $("#" + id).val();
                         }
@@ -132,6 +135,12 @@ var setup = {
         var idGen = Math.random().toString(36).substring(7);
         $("#right-col").append("<p><button id='" + idGen + "'>" + title + "</button></p>");
         $("#" + idGen).bind("click", e);
+    },
+    createText: function(name, text) {
+        $("#right-col").append("<textarea style='width: 175px;' spellcheck='false' id='text-" + name + "'>" + text + "</p>");
+    },
+    updateText: function(name, text) {
+        $("#text-" + name).text(text);
     }
 }
 

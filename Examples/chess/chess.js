@@ -21,7 +21,7 @@ var letters = "abcdefgh".split("");
 var paths = {
     "ugly": "Examples/chess/pieces",
     "merida": "Examples/chess/pieces/merida/80",
-    "alpha": "Examples/chess/pieces/alpha/80",
+    "alpha": "Examples/chess/pieces/alpha/80"
 }
 
 var imagesPath = paths["merida"];
@@ -67,8 +67,6 @@ function Game() {
         this.blackCanCastleKs = true;
         this.whiteCanCastleQs = true;
         this.blackCanCastleQs = true;
-        this.whiteMaterial = 39;
-        this.blackMaterial = 39;
         this.lastMove = null;
         this.board = copyObj(startingBoard);
         gv.message("White's turn");
@@ -76,7 +74,8 @@ function Game() {
         this.gameOverStatus = "";
         this.updateGrid();
         grid.resetRotation();
-        this.pgn = "1. ";
+        this.pgn = "";
+        setup.updateText("pgn", "");
         this.moveNumber = 1;
         if (t == "0player") {
             var self = this;
@@ -102,8 +101,6 @@ function Game() {
         }
     }
     
-    this.whiteMaterial = 39;
-    this.blackMaterial = 39;
     this.turn = white;
     this.whiteCastled = false;
     this.blackCastled = false;
@@ -118,7 +115,7 @@ function Game() {
     this.active = null;
     this.potentialMoves = [];
     this.gameType = "";
-    this.pgn = "1. ";
+    this.pgn = "";
     this.moveNumber = 1;
     
     this.switchTurn = function() {
@@ -129,13 +126,25 @@ function Game() {
             this.turn = white;
             gv.message("White's turn");
             this.moveNumber += 1;
-            this.pgn += this.moveNumber + ". "
         }
+        setup.updateText("pgn", this.pgn);
     }
+
     this.updateGameStatus = function() { //do later: Draw by repeated position, ugh
         var totalMovesBlack = 0;
         var totalMovesWhite = 0;
         var moves;
+
+        //Check for material draw
+        var mSum = getMaterial(this, white) + getMaterial(this, black);
+        if (mSum == 0 || mSum == 3.5) {
+            this.gameOver = true;
+            this.gameOverStatus = "Draw by insufficient material";
+            this.pgn += "1/2-1/2";
+            setup.updateText("pgn", this.pgn);
+            return;
+        }
+
         for (var i = 0; i < 8; i++) {
             for (var k = 0; k < 8; k++) {
                 if (inArr(white, this.board[i][k])) {
@@ -150,7 +159,6 @@ function Game() {
         if (this.turn == black && totalMovesBlack == 0) {
             this.gameOver = true;
             if (isCheck(this, black, [], [], true)) {
-                this.blackMaterial = -1;
                 this.gameOverStatus = "White wins by checkmate";
                 this.pgn += "1-0";
             } else {
@@ -160,7 +168,6 @@ function Game() {
         } else if (this.turn == white && totalMovesWhite == 0) {
             this.gameOver = true;
             if (isCheck(this, white, [], [], true)) {
-                this.whiteMaterial = -1;
                 this.gameOverStatus = "Black wins by checkmate";
                 this.pgn += "0-1";
             } else {
@@ -168,7 +175,9 @@ function Game() {
                 this.pgn += "1/2-1/2";
             }
         }
+        setup.updateText("pgn", this.pgn);
     }
+
     this.updateGrid = function() {
         var self = this;
         grid.foreach(function(sprite) {
@@ -191,22 +200,22 @@ function Game() {
     }
     
     this.move = function(l1, l2) { 
+        if (this.turn == white) {
+            this.pgn += this.moveNumber + ". ";
+        }
+
         var piece = this.board[l1[0]][l1[1]];
         if (piece == "wP" && l2[0] == 0) {
-            this.whiteMaterial += 8;
             piece = "wQ";
         }
         if (piece == "bP" && l2[0] == 7) {
-            this.blackMaterial += 8;
             piece = "bQ";
         }
-        
-        
 
         this.board[l1[0]][l1[1]] = EMPTY; //remove from current location
         if (piece.charAt(1) == "P") {
             if (this.board[l2[0]][l2[1]] != EMPTY) {
-                this.pgn += letters[l1[1]];
+                this.pgn += letters[l1[1]] + "x";
             }
         } else {
             this.pgn += piece.charAt(1);
@@ -216,24 +225,20 @@ function Game() {
         if (piece == "wP" && l1[1] != l2[1]) {
             if (this.board[l2[0]][l2[1]] == EMPTY) {
                 this.board[l2[0]+1][l2[1]] = EMPTY;
-                this.blackMaterial -= 1;
-                this.pgn += "x";
+                this.pgn += letters[l1[1]] + "x";
             }
         } else if (piece == "bP" && l1[1] != l2[1]) {
             if (this.board[l2[0]][l2[1]] == EMPTY) {
                 this.board[l2[0]-1][l2[1]] = EMPTY;
-                this.whiteMaterial -= 1;
-                this.pgn += "x";
+                this.pgn += letters[l1[1]] + "x";
             }
         } else {
             var oldCellValue = this.board[l2[0]][l2[1]];
             if (inArr(black, oldCellValue)) {
                 //Took a black piece
-                this.blackMaterial -= pieceValueLookup[oldCellValue];
                 this.pgn += "x";
             } else if (inArr(white, oldCellValue)) {
                 //Took a white piece
-                this.whiteMaterial -= pieceValueLookup[oldCellValue];
                 this.pgn += "x";
             }
         }
@@ -292,15 +297,17 @@ function Game() {
 
 var pieceValueLookup = {
     "wP": 1,
-    "wN": 3,
-    "wB": 3,
+    "wN": 3.5,
+    "wB": 3.5,
     "wR": 5,
     "wQ": 9,
     "bP": 1,
     "bN": 3,
     "bB": 3,
     "bR": 5,
-    "bQ": 9
+    "bQ": 9,
+    "bK": 0,
+    "wK": 0
 }
 
 function handleClick(g, r, c) {
@@ -365,11 +372,17 @@ function handleClick(g, r, c) {
 }
 
 function getMaterial(g, side) {
-    if (side == white) {
-        return g.whiteMaterial;
-    } else {
-        return g.blackMaterial;
+    var result = 0;
+    var p;
+    for (var i = 0; i < 8; i++) {
+        for (var k = 0; k < 8; k++) {
+            p = g.board[i][k];
+            if (inArr(side, p)) {
+                result += pieceValueLookup[p];
+            }
+        }
     }
+    return result;
 }
 
 function getAIMove(g, turn, depth) {
@@ -403,7 +416,6 @@ function getAIMove(g, turn, depth) {
                         gcopy.move([i, k], moves[m]);
                         mat = getMaterial(gcopy, opponent(turn));
                         if (mat < minEnemy) {
-                            print(mat)
                             minEnemy = mat;
                             result = [
                                 [i, k],
@@ -726,6 +738,16 @@ setup.createOptions({
         "title": "Draw Borders",
         "default": false
     },
+    "pieceStyle": {
+        "type": "options",
+        "title": "Piece Style",
+        "options": {
+            "merida": "Merida",
+            "alpha": "Alpha",
+            "ugly": "Hand-drawn",
+        },
+        "default": "Merida"
+    },
     "gameType": {
         "type": "options",
         "title": "",
@@ -736,7 +758,7 @@ setup.createOptions({
             "0player": "No players"
         },
         "default": "2player"
-    },
+    }
 });
 
 draw.overdraw = function() {}; // override defualt grid behavior on startup
@@ -745,12 +767,15 @@ setup.createButton("new game", function(e) {
     game.init(gv.get("gameType"));
 })
 
+setup.createText("pgn", game.pgn);
+
 gv.bindInputChange(function(){
     if (gv.get("drawBorder")) {
         draw.overdraw = grid.draw;
     } else {
         draw.overdraw = function() {};
     }
+    imagesPath = paths[gv.get("pieceStyle")];
     game.updateGrid();
 })
 
