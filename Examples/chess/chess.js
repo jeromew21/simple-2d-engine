@@ -21,7 +21,8 @@ var letters = "abcdefgh".split("");
 var paths = {
     "ugly": "Examples/chess/pieces",
     "merida": "Examples/chess/pieces/merida/80",
-    "alpha": "Examples/chess/pieces/alpha/80"
+    "alpha": "Examples/chess/pieces/alpha/80",
+    "ugly2": "Examples/chess/pieces/gaygaygay"
 }
 
 var imagesPath = paths["merida"];
@@ -77,10 +78,11 @@ function Game() {
         this.pgn = "";
         setup.updateText("pgn", "");
         this.moveNumber = 1;
+        this.boards = [copyObj(this.board)];
         if (t == "0player") {
             var self = this;
             f = function() {
-                self.aiMove(self.turn);
+                aiMove(self, self.turn, 2);
                 self.updateGrid();
                 self.switchTurn();
                 self.updateGameStatus();
@@ -95,28 +97,11 @@ function Game() {
             if (gv.get("flipBoard")) {
                 grid.rotate(180);
             }
-            this.aiMove(this.turn);
+            aiMove(this, this.turn, 2);
             this.updateGrid();
             this.switchTurn();
         }
     }
-    
-    this.turn = white;
-    this.whiteCastled = false;
-    this.blackCastled = false;
-    this.gameOver = false;
-    this.gameOverStatus = "";
-    this.whiteCanCastleKs = true;
-    this.blackCanCastleKs = true;
-    this.whiteCanCastleQs = true;
-    this.blackCanCastleQs = true;
-    this.lastMove = null;
-    this.board = copyObj(startingBoard);
-    this.active = null;
-    this.potentialMoves = [];
-    this.gameType = "";
-    this.pgn = "";
-    this.moveNumber = 1;
     
     this.switchTurn = function() {
         if (this.turn == white) {
@@ -286,13 +271,14 @@ function Game() {
         }
         this.lastMove = [l1, l2];
     }
-    this.aiMove = function(turn) {
-        //Make an AI move
-        //Before AI though make more game metadata id. count turns
-        //    and make sure legalMoves is optimized
-        var m = getAIMove(this, turn, 1);
-        this.move(m[0], m[1]);
-    }
+}
+
+function aiMove(g, turn, depth) {
+    //Make an AI move
+    //Before AI though make more game metadata id. count turns
+    //    and make sure legalMoves is optimized
+    var m = getAIMove(g, turn, depth);
+    g.move(m[0], m[1]);
 }
 
 var pieceValueLookup = {
@@ -302,8 +288,8 @@ var pieceValueLookup = {
     "wR": 5,
     "wQ": 9,
     "bP": 1,
-    "bN": 3,
-    "bB": 3,
+    "bN": 3.5,
+    "bB": 3.5,
     "bR": 5,
     "bQ": 9,
     "bK": 0,
@@ -358,7 +344,7 @@ function handleClick(g, r, c) {
                     grid.rotate(180);
                     g.updateGrid();
                 } else if (gameType == "1playerWhite" || gameType == "1playerBlack") {
-                    g.aiMove(g.turn);
+                    aiMove(g, g.turn, 2);
                     g.updateGrid();
                     g.switchTurn();
                     g.updateGameStatus();
@@ -426,6 +412,37 @@ function getAIMove(g, turn, depth) {
                 } 
             }
         }
+        return result;
+    } if (depth == 2) {
+        //game roll back to optimize memory performance instead of creating a new copy everytime
+        var maxDelta = -1000;
+        var result = getAIMove(g, turn, 0);
+        var moves, gCopy, delta, h;
+        for (var i = 0; i < 8; i++) {
+            for (var k = 0; k < 8; k++) {
+                if (inArr(turn, g.board[i][k])) {
+                    moves = legalMoves(g, i, k, true);
+                    for (var m = 0; m < moves.length; m++) {
+                        gcopy = copyObj(g);
+                        gcopy.move([i, k], moves[m]);
+
+                        //aiMove(gCopy, opponent(turn), 1);
+                        h = getAIMove(gcopy, opponent(turn), 1);
+                        gcopy.move(h[0], h[1]);
+
+                        delta = getMaterial(gcopy, turn) - getMaterial(gcopy, opponent(turn));
+                        if (delta > maxDelta) {
+                            maxDelta = delta;
+                            result = [
+                                [i, k],
+                                moves[m]
+                            ];
+                        }
+                    }
+                } 
+            }
+        }
+        print(maxDelta)
         return result;
     }
     return [[], []]
@@ -651,23 +668,25 @@ function legalMoves(g, r, c, check) {
             }
             //king cannot pass thru check or CASTLE OUT OF CHECK
             //Can only do once, and if either piece has moved, then cannot
-            if (((piece == "wK" && !g.whiteCastled) && (c == 4 && r == 7)) || ((piece == "bK" && !g.blackCastled) && (c == 4 && r == 0))) {
-                if (((piece == "wK" && g.whiteCanCastleKs) && board[7][7] == "wR") || ((piece == "bK" && g.blackCanCastleKs))){// && board[0][7] == "bR")){
-                    if (board[r][c+1] == EMPTY && board[r][c+2] == EMPTY) {
-                        if (!isCheck(g, friendlies, [r, c], [r, c+1], false)) {
-                            result.push([r, c+2]);
-                        }
+            if (check && !isCheck(g, friendlies, [], [], true)) {
+                if (((piece == "wK" && !g.whiteCastled) && (c == 4 && r == 7)) || ((piece == "bK" && !g.blackCastled) && (c == 4 && r == 0))) {
+                    if (((piece == "wK" && g.whiteCanCastleKs) && board[7][7] == "wR") || ((piece == "bK" && g.blackCanCastleKs) && board[0][7] == "bR")){
+                        if (board[r][c+1] == EMPTY && board[r][c+2] == EMPTY) {
+                            if (!isCheck(g, friendlies, [r, c], [r, c+1], false)) {
+                                result.push([r, c+2]);
+                            }
+                        } 
                     } 
-                } 
-                if (((piece == "wK" && g.whiteCanCastleQs) && board[7][0] == "wR") || ((piece == "bK" && g.blackCanCastleQs) && board[0][0] == "bR")){
-                    if ((board[r][c-1] == EMPTY && board[r][c-2] == EMPTY) && board[r][c-3] == EMPTY) {
-                        if (!isCheck(g, friendlies, [r, c], [r, c-1], false) && !isCheck(g, friendlies, [r, c], [r, c-2], false)) {
-                            result.push([r, c-2]);
-                        }
-                    } 
+                    if (((piece == "wK" && g.whiteCanCastleQs) && board[7][0] == "wR") || ((piece == "bK" && g.blackCanCastleQs) && board[0][0] == "bR")){
+                        if ((board[r][c-1] == EMPTY && board[r][c-2] == EMPTY) && board[r][c-3] == EMPTY) {
+                            if (!isCheck(g, friendlies, [r, c], [r, c-1], false) && !isCheck(g, friendlies, [r, c], [r, c-2], false)) {
+                                result.push([r, c-2]);
+                            }
+                        } 
+                    }
                 }
             }
-        } 
+        }
     }
     if (check) {
         //Keep results that don't create a check for the current side
@@ -745,6 +764,7 @@ setup.createOptions({
             "merida": "Merida",
             "alpha": "Alpha",
             "ugly": "Hand-drawn",
+            "ugly2": "Ugly",
         },
         "default": "Merida"
     },

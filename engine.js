@@ -705,6 +705,14 @@ var grid = {
     },
 }
 
+var request = {
+    get: function(url) {
+        $.get(url, function(data) {
+            print(data);
+        })
+    }
+}
+
 //Kick off
 var update = function() {
     window.requestAnimationFrame(update);
