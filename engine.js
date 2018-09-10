@@ -153,15 +153,19 @@ var globals = {
     clickDelay: 500,
     clickisValid: true,
     keys: {},
+
     setCursor: function(c) {
         $("body").css("cursor", c)
     },
+
     message: function(m) {
         $("#message").html("<h2>" + m + "</h2>");
     },
+
     bindInputChange : function(f) {
         $("input, select").bind("change", f);
     },
+
     get: function(f) {
         if ($.isFunction(this[f])) {
             return this[f](); //Returns a value returned by a global function 
@@ -181,12 +185,16 @@ var events = {
             }
         }
     },
+
     mouseMove: function() {
     },
+
     mouseDown: function() {
     },
+
     mouseUp: function() {
     },
+
     click: function () {
     }
 }
@@ -303,27 +311,28 @@ document.onkeyup = function(e) {
 
 var draw = {
     main: function() {},
-    overdraw: function() {},
 }
 
 var sprites = [];
 
-function Sprite(name) {
+var Sprite = function(name) {
     this.name = name; 
     this.box = new BoundingBox(); //Comes with a default box
     this.draw = function() {
         this.box.draw();
     }
+
     this.events = {};
     this.bind = function(event, func) { //Global events; make own hadling for local events
         this.events[event] = func;
     }
+
     this.box.set(-999, -999, 0, 0, 0);
     this.attrs = {};
     sprites.push(this);
 }
 
-function BoundingBox() {
+var BoundingBox = function() {
     //Begin init
     this.set = function(x, y, w, h, dir) {
         this.dir = dir
@@ -339,14 +348,17 @@ function BoundingBox() {
         this.x = x;
         this.y = y;
     }
+
     this.translate = function(coord, center) {
         //given a coord pair and a center, both w respect to global, give the new coords with respect to the center
         return [coord[0] - center[0], center[1] - coord[1]]
     }
+
     this.restore = function(coord, center) {
         //given a coord with respect to center and a center w respect to global return a coord w respect to global
         return [coord[0] + center[0], center[1] - coord[1]]
     }
+
     this.rotate = function(coord, theta) {
         //given a coord, rotate it theta radians with respect to 0, 0
         //rotation matrix:
@@ -358,23 +370,29 @@ function BoundingBox() {
 
         return [x * Math.cos(theta) - y * Math.sin(theta), x * Math.sin(theta) + y * Math.cos(theta)]
     }
+
     this.setPosition = function(x, y) {
         this.set(x, y, this.w, this.h, this.dir)
     }
+
     this.setSize = function(w, h) {
         this.set(this.x, this.y, w, h, this.dir)
     }
+
     this.setDir = function(dir) {
         this.set(this.x, this.y, this.w, this.h, dir)
     }
+
     this.turn = function(theta) {
         this.set(this.x, this.y, this.w, this.h, this.dir + theta)
     }
+
     this.step = function(steps) {
         x = this.x + steps * Math.cos(this.dir)
         y = this.y - steps * Math.sin(this.dir)
         this.set(x, y, this.w, this.h, this.dir)
     }
+
     this.drawAttrs = {
         fill: false,
         border: true,
@@ -394,9 +412,11 @@ function BoundingBox() {
         imageWidth: 0,
         imageHeight: 0,
     }
+
     this.text = "";
     this.inactive = false;
     this.image = null;
+
     this.draw = function() {
         if (this.inactive) return;
         ctx.fillStyle = this.drawAttrs.fillColor
@@ -418,7 +438,6 @@ function BoundingBox() {
             ctx.stroke()
         }
         //end shape drawing
-
         if (this.drawAttrs.text) {
             ctx.fillStyle = this.drawAttrs.fontColor
             ctx.font = "" + this.drawAttrs.fontSize + "px " + this.drawAttrs.font
@@ -429,7 +448,6 @@ function BoundingBox() {
             ctx.fillText(this.text, ...this.rotate([0, (this.drawAttrs.fontSize/2)-2], this.drawAttrs.textDir))
             ctx.restore()
         }
-
         if (this.drawAttrs.image) {
             if (this.image == null) {
                 //Load image src
@@ -451,10 +469,12 @@ function BoundingBox() {
             }
         } 
     }
+
     this.refreshImage = function(s) {
         this.image = new Image();
         this.image.src = this.drawAttrs.imageSrc;
     }
+
     this.drawEllipse = function() {
         ctx.fillStyle = this.drawAttrs.fillColor
         ctx.strokeStyle = this.drawAttrs.borderColor
@@ -471,7 +491,6 @@ function BoundingBox() {
             ctx.stroke()
         }
     }
-    //End init
 
     this.pointRelLine = function(point, p1, p2, rel) {
         //True if point touching line or above [right of] line
@@ -494,15 +513,18 @@ function BoundingBox() {
             return y < expectedY
         }
     }
+
     this.pointBetweenLines = function(point, a1, a2, b1, b2) {
         return (this.pointRelLine(point, a1, a2, "above") && this.pointRelLine(point, b1, b2, "below")) || (this.pointRelLine(point, b1, b2, "above") && this.pointRelLine(point, a1, a2, "below"))
     }
+
     this.pointInside = function(point) {
         //lines from p1 to p2, p3 to p4
         //lines form p2 to p3, p1 to p4
         //must be inside bounds of each of those pairs of lines
         return this.pointBetweenLines(point, this.p1, this.p2, this.p3, this.p4) && this.pointBetweenLines(point, this.p2, this.p3, this.p1, this.p4)
     }
+
     this.onSegment = function(p, q, r) {
         if (q[0] <= Math.max(p[0], r[0]) && q[0] >= Math.min(p[0], r[0]) &&
             q[1] <= Math.max(p[1], r[1]) && q[1] >= Math.min(p[1], r[1])) {
@@ -564,6 +586,7 @@ function BoundingBox() {
      
         return false; // Doesn't fall in any of the above cases
     }
+
     this.touching = function(otherBox) {
         pts = [this.p1, this.p2, this.p3, this.p4]
         opts = [otherBox.p1, otherBox.p2, otherBox.p3, otherBox.p4]
@@ -589,6 +612,7 @@ function BoundingBox() {
         }
         return false
     }
+
     this.offstage = function() {
         pts = [this.p1, this.p2, this.p3, this.p4]
         for (var i = 0; i < 4; i++) { //if any are on stage return false
@@ -606,12 +630,15 @@ var grid = {
     rows: 8,
     cols: 8,
     tiles: [],
+
     getCellWidth: function() {
         return gv.width / this.rows;
     },
+
     getCellHeight: function() {
         return gv.height / this.cols;
     },
+
     draw: function() {
         var width = gv.width / grid.rows;
         var height = gv.height / grid.cols;
@@ -628,10 +655,13 @@ var grid = {
             ctx.stroke()
         }
     },
+
     tiles: [],
+
     get: function(r, c) {
         return this.tiles[r][c]
     },
+
     foreach: function(f) {
         for (var i = 0; i < this.rows; i++) {
             for (var k = 0; k < this.cols; k++) {
@@ -639,6 +669,7 @@ var grid = {
             }
         }
     },
+
     init: function(r, c) {
         this.rows = r;
         this.cols = c;
@@ -657,6 +688,7 @@ var grid = {
         }
         draw.overdraw = this.draw;
     },
+
     resetRotation: function() {
         var width = gv.width / this.rows;
         var height = gv.height / this.cols;
@@ -666,6 +698,7 @@ var grid = {
             }
         }
     },
+
     rotate: function(amt) {
         if (this.rows == this.cols) {
             if (amt == 90) {
@@ -708,7 +741,7 @@ var grid = {
 var request = {
     get: function(url) {
         $.get(url, function(data) {
-            print(data);
+            return data;
         })
     }
 }
@@ -724,6 +757,5 @@ var update = function() {
     for (var k = 0; k < sprites.length; k++) {
         sprites[k].draw();
     }
-    draw.overdraw();
 } 
 update();
